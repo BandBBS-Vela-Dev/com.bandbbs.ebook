@@ -1,0 +1,258 @@
+<import name="number" src="../../components/number_choose/number_choose"></import>
+<template>
+  <div class="page" style="flex-direction: column;">
+	<!-- <div style="width: 336px;padding-left: 15px;padding-right: 15px;padding-top: 19px;">
+		<img src="/common/images/back1.png" @click="back('')" style="width:40px;height: 40px;"/>
+		<text style="font-size: 35px;font-weight:bold;line-height: 40px;color: white;width: 226px;text-align: center;">
+			阅读进度
+		</text>
+	</div> -->
+	<!-- <list class="list">
+		<list-item class="item">
+		    <text class="itemtext" @click="routerTo('readPresent')">阅读进度</text>
+		</list-item>
+	</list> -->
+	<!-- <div class="item">
+		<img src="/common/images/bg1.png" style="position:absolute;top:0px;left:0px"/>
+		<img src="/common/images/minis.png" @click="minis('')" style="width:40px;height: 40px;top:4px"/>
+		<text style="font-size: 36px;font-weight:bold;line-height: 40px;color: white;width: 200px;text-align: center;">
+			{{percent}}%
+		</text>
+		<img src="/common/images/plus.png" @click="plus('')" style="width:40px;height: 40px;top:4px"/>
+	</div>
+	<div style="position:absolute;top:173px;left:6px;width:333px;height:68px">
+		<text class="itemtext" @click="onClick('7')">7</text>
+		<text class="itemtext" @click="onClick('8')">8</text>
+		<text class="itemtext" @click="onClick('9')">9</text>
+	</div>
+	<div style="position:absolute;top:249px;left:6px;width:333px;height:68px">
+		<text class="itemtext" @click="onClick('4')">4</text>
+		<text class="itemtext" @click="onClick('5')">5</text>
+		<text class="itemtext" @click="onClick('6')">6</text>
+	</div>
+	<div style="position:absolute;top:325px;left:6px;width:333px;height:68px">
+		<text class="itemtext" @click="onClick('1')">1</text>
+		<text class="itemtext" @click="onClick('2')">2</text>
+		<text class="itemtext" @click="onClick('3')">3</text>
+	</div>
+	<div style="position:absolute;top:401px;left:6px;width:333px;height:68px">
+		<img style="margin-right: 9px;" src="/common/images/zero.png" @click="onClick('0')" />
+		<img style="margin-right: 9px;" src="/common/images/conform.png" @click="onClick('conform')" />
+	</div> -->
+
+	<!-- <text style="position:absolute;top:200px;left:6px;width:324px;height:100px;font-size:20px;color:white">{{savedPersent}}</text> -->
+
+
+	<img static src="/common/images/back.png" @click="back('')" style="position: absolute;left: 49.5px;top: 6.6px;width: 113px;height: 80px;"/>
+	<text style="position: absolute;left: 0px;top: 94.6px;width: 212px;height: 42px;font-size: 35px;font-weight: bold;color: white;text-align: center;">阅读进度</text>
+	<!-- <img static src="/common/images/plus.png" style="position: absolute;left: 49.5px;top: 149.6px;width: 113px;height: 80px;" @click="plus('')"/>
+	<text style="position: absolute;left: 0px;top: 231px;width: 212px;height: 50px;font-size: 40px;font-weight: bold;color: white;text-align: center;">{{percent}}%</text>
+	<img static src="/common/images/minis.png" style="position: absolute;left: 49.5px;top: 288.2px;width: 113px;height: 80px;" @click="minis('')"/> -->
+	<text style="position: absolute;left: 0px;top: 376.2px;width: 212px;height: 42px;font-size: 35px;font-weight: bold;color: white;text-align: center;">确认调整</text>
+	<img static src="/common/images/conform.png" style="position: absolute;left: 49.5px;top: 433.8px;width: 113px;height: 80px;" @click="onClick('conform')"/>
+	<number style="position: absolute; top: 149.6px;" max="100" min="0" step="1" unit="%" value="{{percent}}" @change="change"></number>
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+import storage from '../../common/storage.js'
+import prompt from '@system.prompt'
+import app from '@system.app'
+
+export default {
+	// ÷﹢‐+-＋－×÷％
+  // 页面级组件的数据模型，影响传入数据的覆盖机制：private内定义的属性不允许被覆盖
+  private: {
+	percent:0,
+	savedPersent:{},
+  },
+  protected: {
+    cPath: '',
+  	name: '',
+	size: 0
+  },
+  onInit() {
+    var that = this;
+    storage.get({
+      key: 'EBOOK_SAVED',
+      success: function(data) {
+        if (data) {
+          that.savedPersent = JSON.parse(data)
+		  that.percent=that.savedPersent[that.name]["p"]
+        }
+      },
+      fail: function(data, code) {
+        ////console.log(`handling fail, code = ${code}`)
+      }
+    })
+    // setInterval(() => {
+    //     //that.initData();
+	//       that.onUpdate();
+    // }, 50);
+  },
+  onReady(){
+	  // this.resetList();
+  },
+  resetList(){
+
+  },
+  onShow(){
+
+  },
+  onClick(num){
+	this.percent=parseInt(this.percent.toString().concat(num))
+	if (this.percent > 100 || this.percent < 0){
+		this.percent=parseInt(num)
+	}
+	if(num =='conform'){
+		//console.log('size = ' + this.size)
+		//console.log('name = ' + this.name)
+		this.savedPersent[this.name]["p"]=this.percent;
+		//this.savedPersent[this.name]["s"]=0
+		this.savedPersent[this.name]["o"]=0;
+		var offset = Math.ceil(parseInt(this.size) * this.percent/200)*2;
+		this.savedPersent[this.name]["s"]=offset;
+
+		//console.log('saved data = ' + JSON.stringify(this.savedPersent))
+		storage.set({
+	  		key: 'EBOOK_SAVED',
+	  		value: JSON.stringify(this.savedPersent),
+	  		success: function(data) {
+	  		  //console.log('handling success')
+			  prompt.showToast({
+			  	message: '设置成功',
+			  	duration: 2000
+			  })
+	  		},
+	  		fail: function(data, code) {
+	  		  //console.log(`handling fail, code = ${code}`)
+			  prompt.showToast({
+			  	message: '设置失败',
+			  	duration: 2000
+			  })
+	  		}
+	  	})
+
+	}
+  },
+  change(e){
+	  this.percent=e.detail.value;
+  },
+  selectFile(item){
+	  router.push({
+	    uri: '/pages/detail',
+	  	params: { cPath: item.uri,name: item.name }
+	  })
+  },
+  routerTo(url) {
+    // 跳转到应用内的某个页面，router用法详见：文档->接口->页面路由
+	router.push({
+      uri: '/pages/' + url,
+	  params: { cPath: this.cPath,name: this.name }
+	})
+  },
+  back(){
+  	router.back();
+  },
+  exit(){
+	  app.terminate();
+  }
+}
+</script>
+
+<style>
+.page {
+	width: 212px;
+	height: 520px;
+	background-color: #000000;
+}
+
+/* 更多信息样式 */
+.more-info {
+  width: 335px;
+  background-color: rgb(0,0,0);
+}
+
+.caltext {
+	width: 320px;
+	lines: 4;
+	text-overflow: clip;
+	font-size: 30px;
+	color: rgb(255,255,255);
+	text-align: left;
+	height: 160px;
+}
+
+.list {
+	width: 336px;
+	height: 400px;
+	position: absolute;
+	top:72px;
+	/* background-color: red; */
+}
+
+.item {
+	position: absolute;
+	top:72px;
+	left:6px;
+	height: 102px;
+	width: 324px;
+	padding: 20px;
+	flex-direction: row;
+}
+
+.itemtext {
+	font-size: 36px;
+	font-weight: bold;
+	height: 68px;
+	width: 102px;
+	color: white;
+	text-align: center;
+	text-overflow: ellipsis;
+	lines: 1;
+	padding: 10px;
+	margin-right: 9px;
+	background-color: #262626;
+	border-radius:12px;
+}
+
+.itemtext2 {
+	font-size: 30px;
+	line-height: 40px;
+	width: 320px;
+	color: #bbbbbb;
+	margin-left: 6px;
+	text-overflow: ellipsis;
+	lines: 1;
+	padding-left:15px;
+	padding-right:15px;
+	padding-top:15px;
+}
+
+.calbtn1 {
+	color: rgb(191,98,59);
+	font-size: 30px;
+	background-color: rgb(20,20,20);
+	border-radius: 15px;
+	margin: 4px;
+}
+
+.calbtn2 {
+	color: rgb(255,255,255);
+	font-size: 30px;
+	background-color: rgb(20,20,20);
+	border-radius: 15px;
+	margin: 4px;
+}
+
+.infos {
+	width: 296px;
+	text-align: center;
+	font-size: 26px;
+	line-height: 35px;
+	color: white;
+	padding: 4px;
+	text-overflow: ellipsis;
+}
+</style>

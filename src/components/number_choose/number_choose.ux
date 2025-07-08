@@ -1,0 +1,89 @@
+<template>
+    <div class="number_choose" style="{{style}}">
+        <img static onclick="add" onlongpress="addL" ontouchend="end" src="/common/images/plus.png" class="img" style="top: 0px;" />
+        <text >{{ value_ + unit }}</text>
+        <img static onclick="minus" onlongpress="minusL" ontouchend="end" src="/common/images/minis.png" class="img" style="bottom: 0px;" />
+    </div>
+</template>
+
+<script>
+let interval=null;
+export default {
+	props: {
+		max: {
+			default: 100,
+		},
+		min: {
+			default: 0,
+		},
+		step: {
+			default: 1,
+		},
+		value: {
+			default: 0,
+		},
+		unit: {
+			// 单位
+			type: String,
+			default: "",
+        }, style: {
+            default: "",
+        }
+    },
+    data: {
+        value_: 0,
+    },
+    onInit() {
+        this.value_ = parseFloat(this.value || this.min);
+        this.$watch("value", "onValueChange")
+    },
+    add(){
+        if (this.value_ < this.max) {
+            this.value_ += parseFloat(this.step);
+        }
+        this.$emit("change", {value:this.value_});
+    },
+    minus(){
+        if (this.value_ > this.min) {
+            this.value_ -= parseFloat(this.step);
+        }
+        this.$emit("change", { value: this.value_ });
+    },
+    onValueChange(value){
+    	this.value_ = value;
+    },
+    addL() {
+        this.end();
+        interval = setInterval(()=>{this.add()}, 50);
+    },
+    minusL() {
+        this.end();
+        interval = setInterval(()=>{this.minus()}, 50);
+    },
+    end(){
+        clearInterval(interval);
+    }
+};
+</script>
+
+<style>
+.number_choose {
+	width: 100%;
+	height: 218px;
+}
+.img {
+	position: absolute;
+	left: 49.5px;
+	width: 113px;
+	height: 80px;
+}
+text{
+    width: 100%;
+    height: 66px;
+    top:76px;
+    text-align: center;
+    font-size: 50px;
+    color:white;
+    font-weight: bold;
+}
+</style>

@@ -1,0 +1,229 @@
+<template>
+  <div class="page" style="flex-direction: column;">
+	<!-- <div style="width: 336px;padding-left: 15px;padding-right: 15px;padding-top: 19px;">
+		<img src="/common/images/back1.png" @click="back('')" style="width:40px;height: 40px;"/>
+		<text style="font-size: 35px;font-weight:bold;line-height: 40px;color: white;width: 226px;text-align: center;">
+			阅读器设置
+		</text>
+		<img src="/common/images/more.png" @click="openMenu('new')" style="width:40px;height: 40px;"/>
+	</div> -->
+	<list class="list">
+		<list-item type="item" class="item" @click="routerTo('readPresent')">
+		    <text class="itemtext" >阅读进度</text>
+			<img src="/common/images/enter.png" style="width:40px;height: 40px;"/>
+		</list-item>
+		<list-item type="item" class="item" @click="routerTo('opacity')">
+		    <text class="itemtext">字体亮度</text>
+			<img src="/common/images/enter.png" style="width:40px;height: 40px;"/>
+		</list-item>
+		<list-item type="item" class="item" @click="routerTo('fontSetting')">
+		    <text class="itemtext">字号</text>
+			<img src="/common/images/enter.png" style="width:40px;height: 40px;"/>
+		</list-item>
+		<list-item class="item" @click="routerTo('swipe')" type="item">
+		    <text class="itemtext">滑动翻页</text>
+			<img src="/common/images/enter.png" style="width:40px;height: 40px;"/>
+		</list-item>
+		<list-item class="item" @click="routerTo('autoRead')" type="item">
+			    <text class="itemtext">自动翻页</text>
+				<img src="/common/images/enter.png" style="width:40px;height: 40px;"/>
+			</list-item>
+		<list-item type="item" class="item" @click="del('')">
+		    <text class="itemtext">删除书籍</text>
+			<img src="/common/images/enter.png" style="width:40px;height: 40px;"/>
+		</list-item>
+	</list>
+	<img static src="/common/images/mask_up.png" style="position: absolute;top: 0;left: 0;"/>
+	<img static src="/common/images/back.png" @click="back('')" style="position: absolute;left: 49.5px;top: 6.6px;width: 113px;height: 80px;"/>
+	<!-- <img static src="/common/images/mask.png" style="position: absolute;left: 0px;top: 0px;width: 212px;height: 73px;"/>
+	<img static src="/common/images/back1.png" style="position: absolute;left: 36px;top: 21px;width: 42px;height: 42px;"/>
+	<text static style="position: absolute;left: 65px;top: 21px;height: 42px;font-size: 35px;font-weight:bold;line-height: 42px;color: white;text-align: center;">
+		操作
+	</text>
+	<div style="position: absolute;left: 0px;top: 0px;width: 212px;height: 64px;" @click="back('')"></div> -->
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+import prompt from '@system.prompt'
+import app from '@system.app'
+import file from '@system.file'
+
+
+export default {
+	// ÷﹢‐+-＋－×÷％
+  // 页面级组件的数据模型，影响传入数据的覆盖机制：private内定义的属性不允许被覆盖
+  private: {
+	  confirm: true
+  },
+  protected: {
+    cPath: '',
+  	name: '',
+	size: 0
+  },
+  onInit() {
+
+  },
+  onReady(){
+	  // this.resetList();
+  },
+  resetList(){
+
+  },
+  onShow(){
+	  this.confirm = true;
+  },
+  onBackPress(){
+	  //console.log('onBackPress');
+	  // this.resetList();
+  },
+  del(){
+	  if(this.confirm){
+		  this.confirm = false
+		  prompt.showToast({
+			message: '再次点击确认删除',
+			duration: 1000
+		  })
+		  return;
+	  }
+	  //console.log("this.cPath = " + this.cPath)
+	  file.delete({
+	    uri: this.cPath,
+	    success: function(data) {
+	      //console.log('handling success')
+		 //  prompt.showToast({
+			// message: '删除成功',
+			// duration: 1000
+		 //  })
+		 //  router.replace({
+			//   uri: '/pages/index'
+			// })
+			router.back();
+	    },
+	    fail: function(data, code) {
+	      //console.log(`handling fail, code = ${code}`)
+		  prompt.showToast({
+			message: '删除失败',
+			duration: 1000
+		  })
+	    }
+	  })
+  },
+  selectFile(item){
+	  router.push({
+	    uri: '/pages/detail',
+	  	params: { cPath: item.uri,name: item.name }
+	  })
+  },
+  routerTo(url) {
+    // 跳转到应用内的某个页面，router用法详见：文档->接口->页面路由
+	router.push({
+      uri: '/pages/' + url,
+	  params: { cPath: this.cPath,name: this.name,size: this.size }
+	})
+  },
+  back(){
+  	router.back();
+  },
+  exit(){
+	  app.terminate();
+  }
+}
+</script>
+
+<style>
+.page {
+	width: 212px;
+	height: 520px;
+	background-color: #000000;
+}
+
+/* 更多信息样式 */
+.more-info {
+  width: 335px;
+  background-color: rgb(0,0,0);
+}
+
+.caltext {
+	width: 320px;
+	lines: 4;
+	text-overflow: clip;
+	font-size: 30px;
+	color: rgb(255,255,255);
+	text-align: left;
+	height: 160px;
+}
+
+.list {
+	width: 212px;
+	height: 520px;
+	position: absolute;
+	top:0px;
+	left:0px;
+	padding-top: 93px;
+	padding-bottom: 73px;
+	/* background-color: red; */
+}
+
+.item {
+	height: 102px;
+	margin-bottom: 8.8px;
+	background-color: #262626;
+	border-radius: 30px;
+	align-items: center;
+}
+
+.itemtext {
+	font-size: 35px;
+	line-height: 40px;
+	width: 155px;
+	font-weight: bold;
+	color: white;
+	margin-left: 12px;
+	text-overflow: ellipsis;
+	lines: 1;
+	/* padding-left:15px; */
+	/* padding-right:5px; */
+}
+
+
+.itemtext2 {
+	font-size: 30px;
+	line-height: 40px;
+	width: 320px;
+	color: #bbbbbb;
+	margin-left: 6px;
+	text-overflow: ellipsis;
+	lines: 1;
+	padding-left:15px;
+	padding-right:15px;
+	padding-top:15px;
+}
+
+.calbtn1 {
+	color: rgb(191,98,59);
+	font-size: 30px;
+	background-color: rgb(20,20,20);
+	border-radius: 15px;
+	margin: 4px;
+}
+
+.calbtn2 {
+	color: rgb(255,255,255);
+	font-size: 30px;
+	background-color: rgb(20,20,20);
+	border-radius: 15px;
+	margin: 4px;
+}
+
+.infos {
+	width: 296px;
+	text-align: center;
+	font-size: 26px;
+	line-height: 35px;
+	color: white;
+	padding: 4px;
+	text-overflow: ellipsis;
+}
+</style>

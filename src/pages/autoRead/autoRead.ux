@@ -1,0 +1,160 @@
+<import name="number" src="../../components/number_choose/number_choose"></import>
+<template>
+  <div class="page" style="flex-direction: column;">
+	<img static src="/common/images/back.png" @click="back('')" style="position: absolute;left: 49.5px;top: 6.6px;width: 113px;height: 80px;"/>
+	<text style="position: absolute;left: 0px;top: 94.6px;width: 212px;height: 42px;font-size: 35px;font-weight: bold;color: white;text-align: center;">自动翻页</text>
+	<text style="position: absolute;left: 0px;top: 376.2px;width: 212px;height: 42px;font-size: 35px;font-weight: bold;color: white;text-align: center;">开关</text>
+	<img static src="/common/images/Switch_ON.png" style="position: absolute;left: 49.5px;top: 433.8px;width: 113px;height: 80px;" @click="onClick" if="{{enable}}"/>
+	<img static src="/common/images/Switch_OFF.png" style="position: absolute;left: 49.5px;top: 433.8px;width: 113px;height: 80px;" @click="onClick" else/>
+	<number style="position: absolute; top: 149.6px;" max="60" min="1" step="1" unit="s" value="{{speed}}" @change="change"></number>
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+import storage from '../../common/storage.js'
+import prompt from '@system.prompt'
+import app from '@system.app'
+
+export default {
+	// ÷﹢‐+-＋－×÷％
+  // 页面级组件的数据模型，影响传入数据的覆盖机制：private内定义的属性不允许被覆盖
+  private: {
+		speed: 10,
+		enable: false,
+  },
+  onInit() {
+    storage.get({
+      key: 'EBOOK_AUTO',
+      success: (data) => {
+        if (data) {
+			({speed:this.speed,enable:this.enable}=JSON.parse(data))
+        }
+      }
+    })
+    // setInterval(() => {
+    //     //that.initData();
+	//       that.onUpdate();
+    // }, 50);
+  },
+  change(e){
+	  this.speed = e.detail.value;
+	  this.save()
+  },
+  back(){
+	  router.back();
+	this.save()
+  },save(){
+	  storage.set({
+		  key: 'EBOOK_AUTO',
+		  value: JSON.stringify({speed:this.speed,enable:this.enable})
+	  })
+	},
+  onClick(){
+	  this.enable = !this.enable;
+	  if(this.enable){
+		  prompt.showToast({
+			  message: '长按文本以启动自动翻页',
+			  duration: 1000
+		  })
+	  }
+	  this.save()
+  }
+}
+</script>
+
+<style>
+.page {
+	width: 212px;
+	height: 520px;
+	background-color: #000000;
+}
+
+/* 更多信息样式 */
+.more-info {
+  width: 335px;
+  background-color: rgb(0,0,0);
+}
+
+.caltext {
+	width: 320px;
+	lines: 4;
+	text-overflow: clip;
+	font-size: 30px;
+	color: rgb(255,255,255);
+	text-align: left;
+	height: 160px;
+}
+
+.list {
+	width: 336px;
+	height: 400px;
+	position: absolute;
+	top:72px;
+	/* background-color: red; */
+}
+
+.item {
+	position: absolute;
+	top:72px;
+	left:6px;
+	height: 102px;
+	width: 324px;
+	padding: 20px;
+	flex-direction: row;
+}
+
+.itemtext {
+	font-size: 36px;
+	font-weight: bold;
+	height: 68px;
+	width: 102px;
+	color: white;
+	text-align: center;
+	text-overflow: ellipsis;
+	lines: 1;
+	padding: 10px;
+	margin-right: 9px;
+	background-color: #262626;
+	border-radius:12px;
+}
+
+.itemtext2 {
+	font-size: 30px;
+	line-height: 40px;
+	width: 320px;
+	color: #bbbbbb;
+	margin-left: 6px;
+	text-overflow: ellipsis;
+	lines: 1;
+	padding-left:15px;
+	padding-right:15px;
+	padding-top:15px;
+}
+
+.calbtn1 {
+	color: rgb(191,98,59);
+	font-size: 30px;
+	background-color: rgb(20,20,20);
+	border-radius: 15px;
+	margin: 4px;
+}
+
+.calbtn2 {
+	color: rgb(255,255,255);
+	font-size: 30px;
+	background-color: rgb(20,20,20);
+	border-radius: 15px;
+	margin: 4px;
+}
+
+.infos {
+	width: 296px;
+	text-align: center;
+	font-size: 26px;
+	line-height: 35px;
+	color: white;
+	padding: 4px;
+	text-overflow: ellipsis;
+}
+</style>

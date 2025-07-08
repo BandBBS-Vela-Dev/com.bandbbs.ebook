@@ -1,0 +1,9 @@
+/build
+/node_modules
+/dist
+/sign
+.eslintignore
+.npmignore
+package-lock.json
+quickapp.config.js
+.DS_Store

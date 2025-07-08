@@ -1,0 +1,245 @@
+<template>
+  <div class="page" style="flex-direction: column">
+      <!-- <div style="width: 336px;padding-left: 15px;padding-right: 15px;padding-top: 19px;">
+      	<img src="/common/images/back1.png" @click="back('')" style="width:40px;height: 40px;"/>
+      	<text style="font-size: 35px;font-weight:bold;line-height: 40px;color: white;width: 226px;text-align: center;">
+      		文本同步
+      	</text>
+      	<img src="/common/images/more.png" @click="next('')" style="width:40px;height: 40px;"/>
+      </div> -->
+
+
+      <!-- <div style="flex-direction: column;margin-top: 46px;width: 336px;" if="{{state == 'wait'}}">
+          <img src="/common/images/connect.png" style="margin-left: 78px;" />
+          <text style="width: 336px;font-size: 35px;font-weight:bold;color: white;;text-align: center;margin-top: 0px;">
+          	等待APP连接
+          </text>
+          <text style="width: 307.5px;left:25px;font-size: 24px;font-weight:bold;color: rgb(153, 153, 153);text-align: left;margin-top: 10px;padding: 10px;">请打开手机端表盘自定义工具，进入环间电子书安卓端，准备上传文本。
+          </text>
+      </div>
+      <div style="flex-direction: column;margin-top: 46px;width: 336px;" if="{{state == 'ready'}}">
+          <img src="/common/images/choose.png" style="margin-left: 78px;" />
+          <text style="width: 336px;font-size: 35px;font-weight:bold;color: white;;text-align: center;margin-top: 0px;">
+              等待选择文本
+          </text>
+          <text style="width: 307.5px;left:25px;font-size: 24px;font-weight:bold;color: rgb(153, 153, 153);text-align: left;margin-top: 10px;padding: 10px;">连接成功，请在手机端选取小于4M的txt文件后点击推送按钮。
+          </text>
+      </div> -->
+      <text if="{{state == 'wait'||state == 'ready'}}" style="position: absolute;left: 0px;top: 114px;width: 212px;height: 42px;font-size: 35px;text-align: center;font-weight:bold;color: white">文本同步</text>
+      <img if="{{state == 'wait'}}" style="position: absolute;left: 6.5px;top: 160.5px;width: 199px;height: 199px;" src="/common/images/connect.png"/>
+      <text if="{{state == 'wait'}}" style="position: absolute;left: 0px;top: 346px;width: 212px;height: 42px;font-size: 35px;text-align: center;font-weight:bold;color: white">等待连接</text>
+      <img if="{{state == 'ready'}}" style="position: absolute;left: 6.5px;top: 160.5px;width: 199px;height: 199px;" src="/common/images/choose.png" />
+      <text if="{{state == 'ready'}}" style="position: absolute;left: 0px;top: 346px;width: 212px;height: 42px;font-size: 35px;text-align: center;font-weight:bold;color: white">等待选择</text>
+
+      <text if="{{state == 'upload'}}" style="position: absolute;left: 0px;top: 346px;width: 212px;height: 42px;font-size: 35px;text-align: center;font-weight:bold;color: white">{{persent}}%</text>
+      <text if="{{state == 'upload'&&state2 == 'ing'}}" style="position: absolute;left: 0px;top: 114px;width: 212px;height: 42px;font-size: 35px;text-align: center;font-weight:bold;color: white">下载中</text>
+      <img if="{{state == 'upload'&&state2 == 'ing'}}" style="position: absolute;left: 46px;top: 200px;width: 120px;height: 120px;" src="/common/images/download.png" />
+      <text if="{{state == 'upload'&&state2 == 'error'}}" style="position: absolute;left: 0px;top: 114px;width: 212px;height: 42px;font-size: 35px;text-align: center;font-weight:bold;color: white">下载中断</text>
+      <img if="{{state == 'upload'&&state2 == 'error'}}" style="position: absolute;left: 46px;top: 200px;width: 120px;height: 120px;" src="/common/images/error.png" />
+      <text if="{{state == 'upload'&&state2 == 'succ'}}" style="position: absolute;left: 0px;top: 114px;width: 212px;height: 42px;font-size: 35px;text-align: center;font-weight:bold;color: white">下载完成</text>
+      <img if="{{state == 'upload'&&state2 == 'succ'}}" style="position: absolute;left: 46px;top: 200px;width: 120px;height: 120px;" src="/common/images/succ.png" />
+
+      <!-- <div style="flex-direction: column;margin-top: 66px;width: 336px;" if="{{state == 'upload'}}">
+          <img if="{{state2 == 'ing'}}" src="/common/images/download.png" style="margin-left: 114px;" />
+          <text if="{{state2 == 'ing'}}" style="width: 336px;font-size: 35px;font-weight:bold;color: white;;text-align: center;margin-top: 25px;">
+              下载中
+          </text>
+          <img if="{{state2 == 'error'}}" src="/common/images/error.png" style="margin-left: 114px;" />
+          <text if="{{state2 == 'error'}}" style="width: 336px;font-size: 35px;font-weight:bold;color: white;;text-align: center;margin-top: 25px;">
+              下载中断
+          </text>
+          <img if="{{state2 == 'succ'}}" src="/common/images/succ.png" style="margin-left: 114px;" />
+          <text if="{{state2 == 'succ'}}" style="width: 336px;font-size: 35px;font-weight:bold;color: white;;text-align: center;margin-top: 25px;">
+              下载完成
+          </text>
+          <text style="width: 336px;font-size: 24px;font-weight:bold;color: rgb(153, 153, 153);text-align: center;margin-top: 25px;padding: 10px;">
+              当前任务
+          </text>
+          <div class="item">
+            <text class="itemtext" style="position: absolute;left: 0px;top: 25px;width: 210px;margin-left: 20px;">{{fileName}}</text>
+            <text class="itemtext" style="position: absolute;left: 200px;top: 25px;width: 101px;margin-right: 20px; text-align: right;color:rgb(168, 168, 168)">{{persent}}%</text>
+          </div>
+      </div> -->
+
+      <img static src="/common/images/back.png" @click="back('')" style="position: absolute;left: 49.5px;top: 6.6px;width: 113px;height: 80px;"/>
+
+      <!-- <img src="/common/images/push.png" style="position: absolute;left: 49.5px;top: 433.8px;width: 113px;height: 80px;" @click="next('')"/> -->
+<!-- 	<div style="width: 336px;padding-left: 15px;padding-right: 15px;padding-top: 19px;
+		position: absolute;top: 0px;left: 0px;flex-direction: column;">
+		<text style="font-size: 18px;font-weight:bold;line-height: 40px;color: white;width: 226px;text-align: center;">
+			{{msg}}
+		</text>
+        <text style="font-size: 18px;font-weight:bold;line-height: 40px;color: white;width: 226px;text-align: center;">
+        	{{filePath}},{{fileName}}
+        </text>
+        <text style="font-size: 18px;font-weight:bold;line-height: 40px;color: white;width: 226px;text-align: center;">
+        	{{cData}}
+        </text>
+	</div> -->
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+import brightness from "@system.brightness"
+
+export default {
+	// ÷﹢‐+-＋－×÷％
+  // 页面级组件的数据模型，影响传入数据的覆盖机制：private内定义的属性不允许被覆盖
+  private: {
+      fileName: '',
+      persent: 0,
+      state: 'wait',
+      state2: 'ing'
+  },
+  onInit() {
+    this.eventlistener=globalThis.conn.addEventListener((data)=>{
+      if(data=="connect"){
+        this.state = "ready"
+      }else{
+        this.state = "wait"
+      }
+    })
+    globalThis.connfile.setCallback((data) => {
+      switch (data.msg) {
+        case "next":
+          this.state = "upload"
+          this.state2 = "ing"
+          this.fileName = data.fileName;
+          this.persent = (data.progress*100).toFixed(0);
+          break;
+        case "error":
+          this.state = "upload"
+          this.state2 = "error"
+          break;
+        case "success":
+          this.state = "upload"
+          this.state2 = "succ"
+          break;
+        default:
+          break;
+      }
+    })
+  },
+
+  onShow() {
+		brightness.setKeepScreenOn({
+			keepScreenOn: true,
+		});
+	},
+
+	onHide() {
+		brightness.setKeepScreenOn({
+			keepScreenOn: false,
+		});
+	},
+
+  next(){
+    if (this.state=="wait"){
+      this.state="ready"
+    }else if (this.state=="ready"){
+      this.state="upload"
+    }else if (this.state=="upload"){
+      this.state="wait"
+    }
+
+  },
+  back(){
+  	router.back();
+  },
+  onDestroy() {
+    globalThis.conn.removeEventListener(this.eventlistener)
+  }
+}
+</script>
+
+<style>
+.page {
+	width: 212px;
+	height: 520px;
+	background-color: #000000;
+}
+
+/* 更多信息样式 */
+.more-info {
+  width: 335px;
+  background-color: rgb(0,0,0);
+}
+
+.caltext {
+	width: 320px;
+	lines: 4;
+	text-overflow: clip;
+	font-size: 30px;
+	color: rgb(255,255,255);
+	text-align: left;
+	height: 160px;
+}
+
+.list {
+	width: 336px;
+	height: 400px;
+	/* background-color: red; */
+}
+
+.itemtext2 {
+	font-size: 30px;
+	line-height: 40px;
+	width: 320px;
+	color: #bbbbbb;
+	margin-left: 6px;
+	text-overflow: ellipsis;
+	lines: 1;
+	padding-left:15px;
+	padding-right:15px;
+	padding-top:15px;
+}
+
+.calbtn1 {
+	color: rgb(191,98,59);
+	font-size: 30px;
+	background-color: rgb(20,20,20);
+	border-radius: 15px;
+	margin: 4px;
+}
+
+.calbtn2 {
+	color: rgb(255,255,255);
+	font-size: 30px;
+	background-color: rgb(20,20,20);
+	border-radius: 15px;
+	margin: 4px;
+}
+
+.infos {
+	width: 296px;
+	text-align: center;
+	font-size: 26px;
+	line-height: 35px;
+	color: white;
+	padding: 4px;
+	text-overflow: ellipsis;
+}
+.item {
+	height: 102px;
+  width: 324px;
+  left:6px;
+	margin: 0px;
+	background-color: #262626;
+	border-radius: 30px;
+	align-items: center;
+}
+
+.itemtext {
+	font-size: 35px;
+	line-height: 40px;
+	font-weight: bold;
+	width: 265px;
+	color: white;
+	margin-left: 6px;
+  text-overflow: ellipsis;
+  lines: 1;
+	padding-left:5x;
+	padding-right:5px;
+}
+</style>

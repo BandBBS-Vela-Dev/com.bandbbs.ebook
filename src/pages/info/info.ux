@@ -1,0 +1,30 @@
+<template>
+  <div class="page">
+    <div style="position: absolute;left: 0px;top: 0px;width: 212px;height: 520px;">
+      <img src="/common/images/infodetail.png" style="position: absolute;"/>
+      <img src="/common/images/conform.png" style="position: absolute;left: 49.5px;top: 433.8px;width: 113px;height: 80px;" @click="back('')"/>
+    </div>
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+
+export default {
+  back(){
+  	router.back();
+  },
+
+}
+</script>
+
+<style>
+.page {
+	width: 212px;
+	height: 520px;
+	background-color: #000000;
+}
+
+/* 更多信息样式 */
+
+</style>

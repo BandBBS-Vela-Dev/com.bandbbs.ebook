@@ -1,0 +1,29 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "",
+  "engines": {
+    "node": ">=8.10"
+  },
+  "scripts": {
+    "start": "aiot server --watch --open-nuttx --enable-custom-component true",
+    "build": "aiot build --enable-custom-component",
+    "release": "aiot release --enable-custom-component --enable-jsc ",
+    "watch": "aiot watch --open-nuttx",
+    "lint": "eslint --format codeframe --fix --ext .ux,.js src/"
+  },
+  "devDependencies": {
+    "@aiot-toolkit/velasim": "^0.1.25",
+    "aiot-toolkit": "^2.0.4",
+    "babel-eslint": "^10.0.1",
+    "eslint": "^6.8.0",
+    "eslint-plugin-ux": "^0.0.4",
+    "ux-types": "^0.1.1"
+  },
+  "browserslist": [
+    "chrome 65"
+  ],
+  "dependencies": {
+    "@aiot-toolkit/jsc": "^1.0.7"
+  }
+}

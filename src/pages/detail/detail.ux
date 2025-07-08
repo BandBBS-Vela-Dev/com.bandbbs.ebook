@@ -1,0 +1,496 @@
+<template>
+	<div class="page">
+	  <!-- scroll 组件：绑定 scrolltop 与 scrollbottom 事件 -->
+	  <scroll id="scrollId"
+		style="position: absolute; width: 212px; height: 520px;"
+		scroll-y="{{true}}"
+		@scrolltop="onScrollTop"
+		@scrollbottom="onScrollBottom"
+		@click="onTxtClick"
+		onlongpress="onTxtLongPress"
+		>
+
+		<!-- 内容容器采用 flex 布局 -->
+		<div id="contentContainer" style="position: absolute; padding:100px 0px; width:212px; flex-direction: column;">
+		  <!-- 上方加载提示 -->
+		  <text if="{{loadingPrev}}"
+			style="width: 212px; text-align: center; color: #0D91FF; font-size: 24px;padding: 10px 0;">
+			加载中...
+		  </text>
+
+		  <!-- 循环显示双页文本 -->
+		  <text for="{{segments}}"
+			id="{{'segment-' + $idx}}"
+			style="width: 212px; text-align: left; color: rgba(255,255,255,{{opacity/100}}); font-size: {{fontSize}}px; font-weight: bold; line-height: {{lineHeight}}px; ">
+			{{$item.text}}
+		  </text>
+
+		  <!-- 下方加载提示 -->
+		  <text if="{{loadingNext}}"
+			style="width: 212px; text-align: center; color: #0D91FF; font-size: 24px;padding: 10px 0;">
+			加载中...
+		  </text>
+		</div>
+	  </scroll>
+
+	  <!-- 底部其他交互按钮 -->
+	  <img show="{{showSetting}}" src="/common/images/mask_up.png" style="position: absolute; top: 0; left: 0;"/>
+	  <img show="{{showSetting}}" src="/common/images/back.png" @click="back" style="position: absolute; left: 49.5px;top: 6.6px;width: 113px;height: 80px;"/>
+	  <img show="{{showSetting}}" src="/common/images/mask_down.png" style="position: absolute; left: 0px; top: 389px;"/>
+	  <img show="{{showSetting}}" src="/common/images/more.png" style="position: absolute; left: 49.5px;top: 433.8px;width: 113px;height: 80px;" @click="gotoSetting"/>
+
+	  <!-- <text style="position: absolute; left: 0px; top: 240px; width: 212px; font-weight:bold; font-size:20px; color:blue;">
+		{{debugOutput}}
+	  </text> -->
+	</div>
+  </template>
+
+  <script>
+	import prompt from '@system.prompt'
+	import file from '@system.file'
+	import router from '@system.router'
+  import storage from '../../common/storage.js'
+	import brightness from '@system.brightness'
+
+	// 每页文本字节数（实际读取字节数为 txtSizePage*2）
+	var txtSizePage = 500;
+	var allSize = 0;
+	var SAVED_KEY = "EBOOK_SAVED";
+
+    let autoInterval = null; // 自动翻页定时器
+
+	export default {
+	  private: {
+		fPath: '',
+		persent: 0,          // 阅读百分比（0～100）
+		fontSize: 30,
+		lineHeight: 34,
+		pageHeigh: 500,
+		showSetting: true,
+		loadingNext: false,   // 防止重复加载下一页
+		loadingPrev: false,   // 防止重复加载上一页
+		// 双页模式：segments 数组最多存放两个页面内容
+		segments: [],
+		debugOutput: "初始化中...",
+		_currentFileOffset: 0, // 当前顶部页面在文件中的起始偏移（字节）
+		opacity: 100,
+  			swipe: 'column',
+		auto: false,
+	  },
+	  protected: {
+		cPath: '',
+		name: ''  // 当前书籍名称或文件名，用作全局保存进度的键
+	  },
+	  onInit(){
+		var that = this;
+		// 初次启动提示（保持原有逻辑）
+		storage.get({
+		  key: 'EBOOK_TIPS',
+		  success: function(data) {
+			if(data != "1"){
+			  storage.set({
+				key: 'EBOOK_TIPS',
+				value: '1',
+				success: function(){
+				  that.routerTo('info');
+				}
+			  });
+			}
+		  },
+		  fail: function(){
+			storage.set({
+			  key: 'EBOOK_TIPS',
+			  value: '1',
+			  success: function(){
+				that.routerTo('info');
+			  }
+			});
+		  }
+		});
+	  },
+	  onShow(){
+		var that = this;
+		// 读取全局保存的进度，恢复 _currentFileOffset 和 persent
+		this.initReadFile();
+		// 读取字号设置
+		storage.get({
+		  key: 'EBOOK_FONT',
+		  success: function(data){
+			if(data){
+			  that.fontSize = parseInt(data);
+			  that.lineHeight = parseInt((-0.01)*(that.fontSize**2) + 1.62*that.fontSize - 3.23);
+			} else {
+			  storage.set({
+				key: 'EBOOK_FONT',
+				value: that.fontSize.toString()
+			  });
+			}
+			that.pageHeigh = Math.floor(that.pageHeigh/that.lineHeight) * that.lineHeight;
+		  },
+		  fail: function(){}
+		});
+		storage.get({
+		  key: 'EBOOK_OPACITY',
+		  success: function(data) {
+			if (data) {
+				that.opacity = parseInt(data)
+			} else {
+				storage.set({
+					key: 'EBOOK_OPACITY',
+					value: '100'
+				});
+				that.opacity = 100
+			}
+		  },
+		})
+		storage.get({
+		  key: 'EBOOK_SWIPE',
+		  success: function(data) {
+			if (data) {
+				that.swipe = data
+			} else {
+				storage.set({
+					key: 'EBOOK_SWIPE',
+					value: 'column'
+				});
+				that.swipe = 'column'
+			}
+		  },
+		})
+		storage.get({
+		  key: 'EBOOK_AUTO',
+  			success: (data) => {
+				if(!data)return;
+  				const { speed, enable } = JSON.parse(data);
+				if(enable)this.auto = speed;
+		  }
+		})
+		setTimeout(() => {
+			that.$element("scrollId").scrollTo({
+				top: 100,
+				left: 0,
+				behavior: 'instant'
+			});
+		}, 200);
+	  },
+	  //【读取进度】从全局存储中恢复当前书籍的记录（格式 {"book1":{"p":..., "s":..., "o":0}, ...}）
+	  initReadFile(){
+		var that = this;
+		storage.get({
+		  key: SAVED_KEY,
+		  success: function(data){
+			var globalData = {};
+			if(data){ globalData = JSON.parse(data); }
+			if(globalData[that.name] && (globalData[that.name].s || globalData[that.name].s === 0)){
+			  that._currentFileOffset = globalData[that.name].s;
+			  that.persent = globalData[that.name].p || 0;
+			} else {
+			  that._currentFileOffset = 0;
+			}
+			that.readFile();
+		  },
+		  fail: function(){
+			that._currentFileOffset = 0;
+			that.readFile();
+		  }
+		});
+	  },
+	  readFile(){
+		var that = this;
+		var path = this.cPath;
+		file.access({
+		  uri: path,
+		  success: function(){
+			file.get({
+			  uri: path,
+			  success: function(data){
+				allSize = data.length;
+				// 从 _currentFileOffset 开始加载初始双页内容
+				that.loadInitialSegments();
+			  },
+			  fail: function(){ that.readError(); }
+			});
+		  },
+		  fail: function(){ that.readError(); that.back(); }
+		});
+	  },
+	  // 加载初始双页：先加载第一页，再加载第二页（如果存在）
+	  loadInitialSegments(){
+		var that = this;
+		this.readFileText(this._currentFileOffset, function(str, bytesRead){
+		  that.segments = [{ text: str, offset: that._currentFileOffset, length: bytesRead }];
+		  // 加载第二页
+		  that.loadNextSegmentNoScroll();
+		});
+	  },
+	  // 不做翻页调整，仅追加一页（用于初始加载）
+	  loadNextSegmentNoScroll(){
+		var that = this;
+		let lastSeg = that.segments[that.segments.length - 1];
+		let newOffset = lastSeg.offset + lastSeg.length;
+		if(newOffset >= allSize) return;
+		that.readFileText(newOffset, function(str, bytesRead){
+		  if(str){
+			that.segments.push({ text: str, offset: newOffset, length: bytesRead });
+			// 更新保存信息（顶部段代表当前进度）
+			that._currentFileOffset = that.segments[0].offset;
+			that.persent = parseInt(that._currentFileOffset * 100 / allSize);
+			that.saveData();
+		  }
+		});
+	  },
+	  //【读取文件文本】回调返回文本内容和实际读取的字节数
+	  readFileText(readOffset, cb){
+		if(readOffset >= allSize){
+		  cb('', 0);
+		  return;
+		}
+		var length = txtSizePage * 2;
+		if(readOffset < 0){
+		  length = length + readOffset;
+		  readOffset = 0;
+		}
+		if((readOffset + length) >= allSize){
+		  length = allSize - readOffset;
+		}
+		var that = this;
+		file.readArrayBuffer({
+		  uri: that.cPath,
+		  position: readOffset,
+		  length: length,
+		  success: function(data){
+			var str = '';
+			for(var i = 0; i < data.buffer.length; i += 2){
+			  str += String.fromCharCode(data.buffer[i+1]*256 + data.buffer[i]);
+			}
+			cb(str, length);
+		  },
+		  fail: function(){
+			that.readError();
+			cb('', 0);
+		  }
+		});
+	  },
+	  //【向下翻页】（scrollbottom 触发）
+	  // 追加下一页内容；若双页数量超过 2，则移除顶部页面，并调用 scrollBy 向上偏移被移除页面高度
+	  onScrollBottom(event){
+		if(!this.loadingNext){
+		  this.loadingNext = true;
+		  this.loadNextSegment();
+		}
+	  },
+	  loadNextSegment(){
+		var that = this;
+		let lastSeg = that.segments[that.segments.length - 1];
+		let newOffset = lastSeg.offset + lastSeg.length;
+		if(newOffset >= allSize){
+		  this.loadingNext = false;
+		  return;
+		}
+  		  this.readFileText(newOffset, function (str, bytesRead) {
+		  that.loadingNext = false;
+		  if(str){
+			that.segments.push({ text: str, offset: newOffset, length: bytesRead });
+			// 若超过两页，移除顶部页面
+  			  if (that.segments.length > 2) {
+				that.segments.shift();
+			  that.$element("segment-0").getBoundingClientRect({
+				success: function(rect){
+				  let removedHeight = rect.height;
+				  // 调用 scrollBy 向上偏移 removedHeight，确保当前阅读部分保持位置不变
+				  that.$element("scrollId").scrollBy({
+					top: -removedHeight,
+					left: 0,
+					behavior: 'instant'
+				  });
+				},
+				fail: function(){}
+			  });
+			}
+			that._currentFileOffset = that.segments[0].offset;
+			that.persent = parseInt(that._currentFileOffset * 100 / allSize);
+			that.saveData();
+		  }
+		});
+	  },
+	  //【向上翻页】（scrolltop 触发）
+	  // 预先加载上一页内容，并插入到数组头部；如果超过两页，则移除底部页面，并调用 scrollBy 向下偏移新插入页面高度
+	  onScrollTop(event){
+		if(!this.loadingPrev && this._currentFileOffset > 0){
+		  this.loadingPrev = true;
+		  this.loadPrevSegment();
+		}
+	  },
+	  loadPrevSegment(){
+		var that = this;
+		let firstSeg = that.segments[0];
+		let newOffset = firstSeg.offset - txtSizePage * 2;
+		if(newOffset < 0) newOffset = 0;
+		if(firstSeg.offset <= 0){
+		  this.loadingPrev = false;
+		  return;
+		}
+  		  this.readFileText(newOffset, function (str, bytesRead) {
+		  that.loadingPrev = false;
+		  if(str){
+			that.segments.unshift({ text: str, offset: newOffset, length: bytesRead });
+			that.$element("segment-0").getBoundingClientRect({
+			  success: function(rect){
+				let insertedHeight = rect.height;
+				// 向下滚动 insertedHeight，保持当前内容位置不变
+				that.$element("scrollId").scrollBy({
+				  top: insertedHeight,
+				  left: 0,
+				  behavior: 'instant'
+				});
+			  },
+			  fail: function(){}
+			});
+			// 若超过两页，移除底部页面
+			if(that.segments.length > 2){
+			  that.segments.pop();
+			}
+			that._currentFileOffset = that.segments[0].offset;
+			that.persent = parseInt(that._currentFileOffset * 100 / allSize);
+			that.saveData();
+		  }
+		});
+	  },
+	  readError(){
+		prompt.showToast({
+		  message: '文件读取失败',
+		  duration: 2000
+		});
+	  },
+	  back(){
+		router.back();
+	  },
+	  gotoSetting(){
+		this.saveData();
+		router.push({
+		  uri: '/pages/detailsetting',
+		  params: { cPath: this.cPath, name: this.name, size: allSize }
+		});
+	  },
+	  //【保存进度】只更新当前书籍对应的记录，格式 {"book1":{"p":..., "s":..., "o":0}, ...}
+	  saveData(){
+		var that = this;
+		storage.get({
+		  key: SAVED_KEY,
+		  success: function(data){
+			var globalData = {};
+			if(data){ globalData = JSON.parse(data); }
+			globalData[that.name] = {
+			  s: that._currentFileOffset,
+			  p: that.persent,
+			  o: 0
+			};
+			storage.set({
+			  key: SAVED_KEY,
+			  value: JSON.stringify(globalData)
+			});
+		  },
+		  fail: function(){
+			var globalData = {};
+			globalData[that.name] = {
+			  s: that._currentFileOffset,
+			  p: that.persent,
+			  o: 0
+			};
+			storage.set({
+			  key: SAVED_KEY,
+			  value: JSON.stringify(globalData)
+			});
+		  }
+		});
+	  },
+	  onHide(){
+		this.saveData();
+	  },
+	  routerTo(url){
+		router.push({
+		  uri: '/pages/' + url
+		});
+	  },
+  	onTxtClick(event) {
+		// console.log(JSON.stringify(event));
+		if (this.swipe === 'column') {
+			this.showSetting = !this.showSetting;
+		} else {
+			if (this.showSetting) {
+				this.showSetting = false;
+			} else {
+				if (event.offsetY <= 178) {
+					this.lastPage();
+				} else if (event.offsetY <= 342) {
+					this.showSetting = !this.showSetting;
+				} else {
+					this.nextPage();
+				}
+			}
+
+		}
+	},
+	onTxtLongPress(event) {
+  		if (this.auto) {
+			if(autoInterval){
+				clearInterval(autoInterval);
+				autoInterval = null;
+				prompt.showToast({
+					message: '已关闭自动翻页',
+					duration: 2000
+				});
+				brightness.setKeepScreenOn({ keepScreenOn: false });
+				return;
+			}
+
+			autoInterval = setInterval(() => {
+				this.nextPage();
+			}, this.auto*1000);
+			prompt.showToast({
+				message: '已开启自动翻页',
+				duration: 2000
+			});
+			brightness.setKeepScreenOn({ keepScreenOn: true });
+		}
+	},
+	onHide(){
+		if(autoInterval){
+			clearInterval(autoInterval);
+			autoInterval = null;
+			prompt.showToast({
+					message: '已关闭自动翻页',
+					duration: 2000
+				});
+			brightness.setKeepScreenOn({ keepScreenOn: false });
+		}
+	},
+	onTxtSwipe(event){
+		if(event.direction === 'right'){
+		  this.back();
+		}
+  	},
+	lastPage() {
+		this.$element("scrollId").scrollBy({
+			top: - this.pageHeigh,
+			left: 0,
+			behavior: 'smooth'
+  		});
+	},
+  	nextPage() {
+		this.$element("scrollId").scrollBy({
+			top: this.pageHeigh,
+			left: 0,
+			behavior: 'smooth'
+  		});
+	}
+	}
+  </script>
+
+<style>
+.page {
+	width: 212px;
+	height: 520px;
+	background-color: #000000;
+}
+</style>

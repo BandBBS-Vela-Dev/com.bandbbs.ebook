@@ -1,0 +1,51 @@
+<template>
+  <div class="demo-page">
+    <div style="width: 336px;padding-left: 20px;padding-right: 20px;padding-top: 20px;">
+    	<text style="font-size: 20px;line-height: 20px;color: white;width: 290px;">
+    		{{cPath}}</text>
+    </div>
+	<div style="width: 336px;padding-left: 20px;padding-right: 20px;padding-top: 20px;">
+		<text class="content">
+			当前文件：无
+		</text>
+		<text class="content">
+			请打开表盘自定义工具，依次点击【工具】-【米环8Pro文件上传】-【选择文件】
+			再点击下方的下载按钮
+		</text>
+	</div>
+  </div>
+</template>
+
+<script>
+export default {
+  private: {
+    text: '欢迎打开详情页'
+  },
+  protected: {
+    cPath: ''
+  },
+  onInit(){
+	  
+  }
+}
+</script>
+
+<style>
+.demo-page {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.title {
+  font-size: 20px;
+  text-align: center;
+}
+
+.content {
+	font-size: 30px;
+	line-height: 30px;
+	color: white;
+	width: 296px;
+}
+</style>
