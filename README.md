@@ -1,27 +1,29 @@
+## 相关资源
+
+### 喵喵电子书多端设计稿  
+https://mastergo.com/goto/KWzbQtxB?file=165290124574010  
+
+### 喵喵电子书安卓客户端  
+https://github.com/BandBBS-Vela-Dev/com.bandbbs.ebook-android
+</br></br>
+
 ## 快速上手
 
-### 1. 资源
-
-喵喵电子书官方多端设计稿
-```
-https://mastergo.com/goto/KW51ivFT?page_id=2:30&file=165290124574010
-```
-
-### 2. 开发
+### 1. 开发
 
 ```
 npm install
 npm run start
 ```
 
-### 3. 构建
+### 2. 构建
 
 ```
 npm run build
 npm run release
 ```
 
-### 4. 调试
+### 3. 调试
 
 ```
 npm run watch
