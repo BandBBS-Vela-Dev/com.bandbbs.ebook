@@ -2,22 +2,35 @@
 	<div class="page" style="flex-direction: column;">
 
 	  <img if="{{fileList.length == 0}}" src="/common/images/empty.png"
-		  style="position: absolute;left: 46px;top: 165px;width: 120px;height: 120px;" />
+		  style="position: absolute;left: 104px;top: 146px;width: 128px;height: 128px;" />
 
-	  <text if="{{fileList.length == 0}}" style="position: absolute;left: 0px;top: 307.5px;width: 212px;line-height: 42px;font-weight:bold;font-size:35px;color:white;text-align:center;">书架空空</text>
+	  <text if="{{fileList.length == 0}}" style="position: absolute;left: 0px;top: 298px;width: 336px;line-height: 42px;font-weight:bold;font-size:32px;color:white;text-align:center;">书架空空</text>
 
 	  <list class="list">
 		  <list-item for="{{fileList}}" class="item" @click="selectFile($item)" type="nook">
 			  <text class="itemtext">{{$item.name}}</text>
-			  <text class="itemtext2">已阅读 {{$item.percent}}%</text>
+        <div class="itemtext" style="justify-content: space-between;width: 100%; ">
+            <text class="itemtext2" style="flex:1">已阅读</text>
+            <text class="itemtext2">{{$item.percent}}%</text>
+        </div>
+			  
 		  </list-item>
 	  </list>
-	  <img static src="/common/images/mask_up.png" style="position: absolute;top: 0;left: 0;"/>
-	  <img src="/common/images/more.png" @click="routerTo('more')" style="position: absolute;left: 49.5px;top: 6.6px;width: 113px;height: 80px;"/>
-	  <img if="{{fileList.length == 0}}" src="/common/images/push.png"
-		  style="position: absolute;left: 49.5px;top: 433.8px;width: 113px;height: 80px;" @click="routerTo('push')"/>
 
-	  <!-- <text style="position: absolute;left: 0px;top: 240px;width: 212px;font-weight:bold;font-size:20px;color:red;">{{debugOutput}}</text> -->
+	  <!-- <text style="position: absolute;left: 0px;top: 240px;width: 336px;font-weight:bold;font-size:20px;color:red;">{{debugOutput}}</text> -->
+
+    <img static src="/common/images/hd.png" style="position: absolute;left: 0px;top: 0px;width: 336px;height: 102px;" />
+    <img static src="/common/images/back.png" @click="exit" style="position: absolute;left: 6px;top: 6px;width: 72px;height: 72px;"/>
+    <img static src="/common/images/more.png" @click="routerTo('more')" style="position: absolute;left: 258px;top: 6px;width: 72px;height: 72px;"/>
+    <text style="position: absolute;left: 78px;top: 7px;width: 180px;line-height: 32px;font-weight:bold;font-size:24px;color:rgba(255,255,255,0.6);text-align:center;">
+      {{nowTime}}
+    </text>
+    <text style="position: absolute;left: 78px;top: 35px;width: 180px;line-height: 42px;font-weight:bold;font-size:32px;color:white;text-align:center;">
+      电子书
+    </text>
+
+    <img if="{{fileList.length == 0}}" src="/common/images/push.png" 
+      style="position: absolute;left: 258px;top: 402px;width: 72px;height: 72px;" @click="routerTo('push')"/>
 	</div>
 </template>
 
@@ -25,6 +38,7 @@
 import router from '@system.router';
 import file from '@system.file';
 import storage from '../../common/storage.js';
+import app from '@system.app';
 /* import interconnect from '@system.interconnect' */
 
 const INIT_PATH = "internal://files/books";
@@ -46,7 +60,43 @@ function str2ab(str) {
 export default {
   private: {
     fileList: [],
-    debugOutput: "初始化中..."
+    debugOutput: "初始化中...",
+    nowTime: "00:00",
+    timer: null
+  },
+  exit(){
+	  app.terminate();
+  },
+  updateTime() {
+    const date = new Date();
+    let hours = date.getHours();
+    let minutes = date.getMinutes();
+
+    // 格式化小时和分钟为两位数
+    hours = hours < 10 ? '0' + hours : hours;
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+
+    this.nowTime = `${hours}:${minutes}`;
+  },
+  onInit() {
+    this.updateTime();
+    this.timer = setInterval(() => {
+      this.updateTime();
+    }, 1000);
+    // file.writeArrayBuffer({
+		//     uri: 'internal://files/books/demo1.txt',
+		//     buffer: str2ab(teststr),
+		//   	append: false,
+		//     success: function() {
+		//       console.log('handling success')
+		//     },
+		//     fail: function(data, code) {
+		//       console.log(`handling fail, code = ${code}`)
+		//     }
+		//   })
+  },
+  onDestroy(){
+	  clearInterval(this.timer);
   },
   onShow() {
     this.loadFileList();
@@ -146,37 +196,36 @@ export default {
 
 <style>
 .page {
-	width: 212px;
-	height: 520px;
+	width: 336px;
+	height: 480px;
 	background-color: #000000;
 }
 
 /* 更多信息样式 */
 
 .list {
-	width: 212px;
-	height: 520px;
+	width: 336px;
+	height: 480px;
 	position: absolute;
 	top:0px;
 	left:0px;
-	padding-top: 93px;
-	padding-bottom: 73px;
+  padding: 86px 6px;
 	/* background-color: red; */
 }
 
 .item {
-	width: 212px;
-	height: 122px;
-	padding: 16px 14px;
-	margin-bottom: 8.8px;
+	width: 100%;
+	height: 112px;
+	padding: 14px 20px;
+	margin-bottom: 8px;
 	background-color: #262626;
-	border-radius: 30px;
+	border-radius: 36px;
 	flex-direction: column;
   justify-content: space-between;
 }
 
 .itemtext {
-	font-size: 35px;
+	font-size: 32px;
 	line-height:40px;
 	width: 100%;
 	font-weight: bold;
@@ -189,11 +238,11 @@ export default {
 }
 
 .itemtext2 {
-	font-size: 30px;
-	line-height: 36px;
-	width: 100%;
+	font-size: 28px;
+	line-height: 37px;
+	/* width: 100%; */
 	font-weight: bold;
-	color: #a8a8a8;
+	color: rgba(255,255,255,0.6);
 	text-overflow: ellipsis;
 	lines: 1;
 	/* padding-right:12px; */

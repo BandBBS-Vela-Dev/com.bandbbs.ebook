@@ -1,8 +1,8 @@
 <template>
   <div class="page">
-    <div style="position: absolute;left: 0px;top: 0px;width: 212px;height: 520px;">
+    <div style="position: absolute;left: 0px;top: 0px;width: 336px;height: 480px;">
       <img src="/common/images/infodetail.png" style="position: absolute;"/>
-      <img src="/common/images/conform.png" style="position: absolute;left: 49.5px;top: 433.8px;width: 113px;height: 80px;" @click="back('')"/>
+      <img src="/common/images/conform2.png" style="position: absolute;left: 117px;top: 399px;width: 102px;height: 72px;" @click="back('')"/>
     </div>
   </div>
 </template>
@@ -20,8 +20,8 @@ export default {
 
 <style>
 .page {
-	width: 212px;
-	height: 520px;
+	width: 336px;
+	height: 480px;
 	background-color: #000000;
 }
 

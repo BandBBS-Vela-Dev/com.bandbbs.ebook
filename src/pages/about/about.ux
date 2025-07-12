@@ -1,36 +1,90 @@
 <template>
 	<div class="page">
-
-    <div static style="position: absolute;left: 0px;top: 0px;width: 212px;height: 520px;">
-      <img static src="/common/images/about.png" style="position: absolute;left: 0px;top: 0px;"/>
-
-      <text static style="position: absolute;left: 25px;top: 169px;width: 168px;height: 47px;font-weight: bold;font-size: 35px;color: rgba(255, 255, 255, 0.6);">{{version}}</text>
-	    <img static src="/common/images/back.png" @click="back('')" style="position: absolute;left: 49.5px;top: 6.6px;width: 113px;height: 80px;"/>
-    </div>
-
+  
+	  <img src="/common/images/about.png" style="position: absolute;left: 0px;top: 0px;"/>
+	  <img src="/common/images/back.png" @click="back" style="position: absolute;left: 6px;top: 6px;width: 72px;height: 72px;"/>
+    <!-- <img static src="/common/images/info.png" @click="routeAbout" style="position: absolute;left: 258px;top: 6px;width: 72px;height: 72px;"/> -->
+    <text style="position: absolute;left: 78px;top: 7px;width: 180px;line-height: 32px;font-weight:bold;font-size:24px;color:rgba(255,255,255,0.6);text-align:center;">
+      {{nowTime}}
+    </text>
+    <text style="position: absolute;left: 78px;top: 35px;width: 180px;line-height: 42px;font-weight:bold;font-size:32px;color:white;text-align:center;">
+      {{bigTitle}}
+    </text>
+    <text style="position: absolute;left: 26px;top: 102px;width: 282px;height: 48px;font-size: 36px;font-weight: bold;color: #FFFFFF;">
+      喵喵{{appName}}
+    </text>
+    <text style="position: absolute;left: 26px;top: 154px;width: 204px;height: 48px;font-size: 36px;font-weight: bold;color: rgba(255, 255, 255, 0.6);">
+      {{appVer}}
+    </text>
 	</div>
   </template>
-
+  
   <script>
   import router from '@system.router'
-  import app from '@system.app'
+  // import configuration from '@system.configuration'
+  // import storage from '@system.storage' 
+  // import prompt from '@system.prompt' 
+  import app from '@system.app' 
+  // import file from '@system.file' 
+  
+  // import { hmUI } from '../../common/utils.js'
+  
+  //let confirm = true;
+  
   export default {
-    private: {
-      version: app.getInfo().versionName
-    },
-    back() {
-      router.back();
-    }
+	  // ÷﹢‐+-＋－×÷％
+	// 页面级组件的数据模型，影响传入数据的覆盖机制：private内定义的属性不允许被覆盖
+	private: {
+    nowTime:':',
+	  bigTitle:'关于',
+    appName:'喵喵笔记',
+    appVer:'1.0.0',
+    timer:null
+	},
+	protected: {
+  
+	},
+	onInit() {
+    this.updateTime();
+		const that = this;
+    this.timer = setInterval(function(){
+      that.updateTime();
+    }, 60000);
+    this.appName=app.getInfo().name;
+    this.appVer=app.getInfo().versionName;
+	},
+  onShow(){
+	  this.updateTime();
+  },
+  onDestroy(){
+	  clearInterval(this.timer);
+  },
+	back(){
+		router.back();
+	},
+  updateTime() {
+    const date = new Date();
+    let hours = date.getHours();
+    let minutes = date.getMinutes();
+
+    // 格式化小时和分钟为两位数
+    hours = hours < 10 ? '0' + hours : hours;
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+
+    this.nowTime = `${hours}:${minutes}`;
+  }
+  
   }
   </script>
-
+  
   <style>
   .page {
-	  width: 212px;
-	  height: 520px;
+	  width: 336px;
+	  height: 480px;
 	  background-color: #000000;
   }
-
+  
   /* 更多信息样式 */
-
+  
   </style>
+  

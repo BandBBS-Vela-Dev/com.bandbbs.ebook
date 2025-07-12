@@ -1,8 +1,9 @@
+<import name="number" src="../../components/number_choose/number_choose"></import>
 <template>
 	<div class="page">
 	  <!-- scroll 组件：绑定 scrolltop 与 scrollbottom 事件 -->
 	  <scroll id="scrollId"
-		style="position: absolute; width: 212px; height: 520px;"
+		style="position: absolute; width: 336px; height: 480px;"
 		scroll-y="{{true}}"
 		@scrolltop="onScrollTop"
 		@scrollbottom="onScrollBottom"
@@ -11,37 +12,47 @@
 		>
 
 		<!-- 内容容器采用 flex 布局 -->
-		<div id="contentContainer" style="position: absolute; padding:100px 0px; width:212px; flex-direction: column;">
+		<div id="contentContainer" style="position: absolute; padding:86px 0px; width:336px; flex-direction: column;">
 		  <!-- 上方加载提示 -->
 		  <text if="{{loadingPrev}}"
-			style="width: 212px; text-align: center; color: #0D91FF; font-size: 24px;padding: 10px 0;">
+			style="width: 336px; text-align: center; color: #0D91FF; font-size: 24px;padding: 10px 0;">
 			加载中...
 		  </text>
 
 		  <!-- 循环显示双页文本 -->
 		  <text for="{{segments}}"
 			id="{{'segment-' + $idx}}"
-			style="width: 212px; text-align: left; color: rgba(255,255,255,{{opacity/100}}); font-size: {{fontSize}}px; font-weight: bold; line-height: {{lineHeight}}px; ">
+			style="width: 336px; text-align: left; color: rgba(255,255,255,{{opacity/100}}); font-size: {{fontSize}}px; font-weight: bold; line-height: {{lineHeight}}px; ">
 			{{$item.text}}
 		  </text>
 
 		  <!-- 下方加载提示 -->
 		  <text if="{{loadingNext}}"
-			style="width: 212px; text-align: center; color: #0D91FF; font-size: 24px;padding: 10px 0;">
+			style="width: 336px; text-align: center; color: #0D91FF; font-size: 24px;padding: 10px 0;">
 			加载中...
 		  </text>
 		</div>
 	  </scroll>
 
 	  <!-- 底部其他交互按钮 -->
-	  <img show="{{showSetting}}" src="/common/images/mask_up.png" style="position: absolute; top: 0; left: 0;"/>
-	  <img show="{{showSetting}}" src="/common/images/back.png" @click="back" style="position: absolute; left: 49.5px;top: 6.6px;width: 113px;height: 80px;"/>
-	  <img show="{{showSetting}}" src="/common/images/mask_down.png" style="position: absolute; left: 0px; top: 389px;"/>
-	  <img show="{{showSetting}}" src="/common/images/more.png" style="position: absolute; left: 49.5px;top: 433.8px;width: 113px;height: 80px;" @click="gotoSetting"/>
 
-	  <!-- <text style="position: absolute; left: 0px; top: 240px; width: 212px; font-weight:bold; font-size:20px; color:blue;">
+
+	  <!-- <text style="position: absolute; left: 0px; top: 240px; width: 336px; font-weight:bold; font-size:20px; color:blue;">
 		{{debugOutput}}
 	  </text> -->
+
+		<img show="{{showSetting}}" src="/common/images/hd.png" style="position: absolute;left: 0px;top: 0px;width: 336px;height: 102px;" />
+		<img show="{{showSetting}}" src="/common/images/back.png" @click="back" style="position: absolute;left: 6px;top: 6px;width: 72px;height: 72px;"/>
+		<img show="{{showSetting}}" src="/common/images/more.png" @click="gotoSetting" style="position: absolute;left: 258px;top: 6px;width: 72px;height: 72px;"/>
+		<text show="{{showSetting}}" style="position: absolute;left: 78px;top: 7px;width: 180px;line-height: 32px;font-weight:bold;font-size:24px;color:rgba(255,255,255,0.6);text-align:center;">
+			{{nowTime}}
+		</text>
+		<marquee show="{{showSetting}}" style="position: absolute;left: 78px;top: 35px;width: 180px;line-height: 42px;font-weight:bold;font-size:32px;color:white;text-align:center;">
+			{{name}}
+		</marquee>
+
+		<img show="{{showSetting}}" src="/common/images/bt.png" style="position: absolute;left: 0px;top: 378px;width: 336px;height: 102px;" />
+		<number display="{{showSetting}}" style="position: absolute; top: 402px;" max="100" min="0" step="1" unit="%" value="{{persent}}" name="阅读进度" @change="change"></number>
 	</div>
   </template>
 
@@ -65,7 +76,7 @@
 		persent: 0,          // 阅读百分比（0～100）
 		fontSize: 30,
 		lineHeight: 34,
-		pageHeigh: 500,
+		pageHeigh: 480,
 		showSetting: true,
 		loadingNext: false,   // 防止重复加载下一页
 		loadingPrev: false,   // 防止重复加载上一页
@@ -76,13 +87,69 @@
 		opacity: 100,
   			swipe: 'column',
 		auto: false,
+		nowTime: "00:00",
+		timer: null,
+		savedPersent:{},
 	  },
 	  protected: {
 		cPath: '',
-		name: ''  // 当前书籍名称或文件名，用作全局保存进度的键
+		name: '',  // 当前书籍名称或文件名，用作全局保存进度的键
 	  },
+	  updateTime() {
+		const date = new Date();
+		let hours = date.getHours();
+		let minutes = date.getMinutes();
+
+		// 格式化小时和分钟为两位数
+		hours = hours < 10 ? '0' + hours : hours;
+		minutes = minutes < 10 ? '0' + minutes : minutes;
+
+		this.nowTime = `${hours}:${minutes}`;
+	},
+	change(e){
+		const that = this;
+		this.persent=e.detail.value;
+		this.savedPersent[this.name]["p"]=this.persent;
+		this.savedPersent[this.name]["o"]=0;
+		var offset = Math.ceil(parseInt(allSize) * this.persent/200)*2;
+		this.savedPersent[this.name]["s"]=offset;
+
+		storage.set({
+	  		key: 'EBOOK_SAVED',
+	  		value: JSON.stringify(this.savedPersent),
+	  		success: function(data) {
+				that.initReadFile();
+	  		},
+	  		fail: function(data, code) {
+			  prompt.showToast({
+			  	message: '设置失败',
+			  	duration: 2000
+			  })
+	  		}
+	  	})
+	  
+	},
+	onDestroy(){
+	  clearInterval(this.timer);
+	},
 	  onInit(){
+		this.updateTime();
+		this.timer = setInterval(() => {
+			this.updateTime();
+		}, 1000);
 		var that = this;
+		storage.get({
+			key: 'EBOOK_SAVED',
+			success: function(data) {
+				if (data) {
+				that.savedPersent = JSON.parse(data)
+				// that.persent=that.savedPersent[that.name]["p"]
+				}
+			},
+			fail: function(data, code) {
+				////console.log(`handling fail, code = ${code}`)
+			}
+		})
 		// 初次启动提示（保持原有逻辑）
 		storage.get({
 		  key: 'EBOOK_TIPS',
@@ -167,7 +234,7 @@
 		})
 		setTimeout(() => {
 			that.$element("scrollId").scrollTo({
-				top: 100,
+				top: 86,
 				left: 0,
 				behavior: 'instant'
 			});
@@ -179,11 +246,10 @@
 		storage.get({
 		  key: SAVED_KEY,
 		  success: function(data){
-			var globalData = {};
-			if(data){ globalData = JSON.parse(data); }
-			if(globalData[that.name] && (globalData[that.name].s || globalData[that.name].s === 0)){
-			  that._currentFileOffset = globalData[that.name].s;
-			  that.persent = globalData[that.name].p || 0;
+			if(data){ that.savedPersent = JSON.parse(data); }
+			if(that.savedPersent[that.name] && (that.savedPersent[that.name].s || that.savedPersent[that.name].s === 0)){
+			  that._currentFileOffset = that.savedPersent[that.name].s;
+			  that.persent = that.savedPersent[that.name].p || 0;
 			} else {
 			  that._currentFileOffset = 0;
 			}
@@ -378,28 +444,28 @@
 		storage.get({
 		  key: SAVED_KEY,
 		  success: function(data){
-			var globalData = {};
-			if(data){ globalData = JSON.parse(data); }
-			globalData[that.name] = {
+
+			if(data){ that.savedPersent = JSON.parse(data); }
+			that.savedPersent[that.name] = {
 			  s: that._currentFileOffset,
 			  p: that.persent,
 			  o: 0
 			};
 			storage.set({
 			  key: SAVED_KEY,
-			  value: JSON.stringify(globalData)
+			  value: JSON.stringify(that.savedPersent)
 			});
 		  },
 		  fail: function(){
-			var globalData = {};
-			globalData[that.name] = {
+
+			that.savedPersent[that.name] = {
 			  s: that._currentFileOffset,
 			  p: that.persent,
 			  o: 0
 			};
 			storage.set({
 			  key: SAVED_KEY,
-			  value: JSON.stringify(globalData)
+			  value: JSON.stringify(that.savedPersent)
 			});
 		  }
 		});
@@ -420,9 +486,9 @@
 			if (this.showSetting) {
 				this.showSetting = false;
 			} else {
-				if (event.offsetY <= 178) {
+				if (event.offsetY <= 158) {
 					this.lastPage();
-				} else if (event.offsetY <= 342) {
+				} else if (event.offsetY <= 322) {
 					this.showSetting = !this.showSetting;
 				} else {
 					this.nextPage();
@@ -489,8 +555,8 @@
 
 <style>
 .page {
-	width: 212px;
-	height: 520px;
+	width: 336px;
+	height: 480px;
 	background-color: #000000;
 }
 </style>
