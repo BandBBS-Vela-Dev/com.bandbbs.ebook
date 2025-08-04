@@ -23,7 +23,7 @@
 
 <script>
 import router from "@system.router";
-import storage from "@system.storage";
+import storage from '../../common/storage.js';
 import app from "@system.app";
 
 export default {

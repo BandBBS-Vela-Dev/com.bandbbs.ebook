@@ -48,7 +48,7 @@ export default class InterHandshake extends interconn {
     callback = () => { }
     get connected() { return this.promise !== null }
     _newPromise() {
-        return new Promise((resolve, reject) => {
+        return new Promise(( resolve, reject ) => {
             const timeout = setTimeout(() => {
                 reject(new Error("timeout"));
                 this.promise = this.resolve = null;
