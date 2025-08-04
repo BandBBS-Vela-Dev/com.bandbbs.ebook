@@ -46,14 +46,33 @@
 		// rowSwipe:"/common/images/false.png",
 		// close:"/common/images/false.png",
 		onSelect:3,
-		txtNum:0
+		txtNum:0,
+		nowTime: "00:00",
+		timer: null
 	},
 	protected: {
 	  cPath: '',
 		name: ''
 	},
-	onInit() {
+	updateTime() {
+		const date = new Date();
+		let hours = date.getHours();
+		let minutes = date.getMinutes();
 
+		// 格式化小时和分钟为两位数
+		hours = hours < 10 ? '0' + hours : hours;
+		minutes = minutes < 10 ? '0' + minutes : minutes;
+
+		this.nowTime = `${hours}:${minutes}`;
+	},
+	onInit() {
+		this.updateTime();
+		this.timer = setInterval(() => {
+			this.updateTime();
+		}, 1000);
+	},
+	onDestroy(){
+		clearInterval(this.timer);
 	},
 	onReady(){
 		// this.resetList();
