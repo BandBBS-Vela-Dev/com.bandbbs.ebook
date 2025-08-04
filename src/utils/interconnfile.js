@@ -1,5 +1,5 @@
 import file from "@system.file";
-import storage from "@system.storage";
+import storage from '../common/storage.js';
 import runAsyncFunc from "./runAsyncFunc";
 import str2abWrite from "./str2abWrite";
 
