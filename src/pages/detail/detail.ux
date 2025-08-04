@@ -480,7 +480,7 @@
 		  fail: function(){
 
 			that.savedPersent[that.name] = {
-			  s: that._currentFileOffset,
+			  s: that.currentFileOffset,
 			  p: that.persent,
 			  o: that.currentScrollTop
 			};
