@@ -1,0 +1,11 @@
+<script>
+import interconnfile from "./utils/interconnfile"
+import interconn from "./utils/handshake"
+import router from '@system.router'
+globalThis.conn = new interconn();
+globalThis.conn.setHandshakeListener(() => {
+  router.push({uri: 'pages/push'})
+})
+globalThis.connfile = globalThis.conn.register(interconnfile);
+export default {}
+</script>

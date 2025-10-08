@@ -2,7 +2,7 @@
 	<div class="page">
 	  <!-- scroll 组件：绑定 scrolltop 与 scrollbottom 事件 -->
 	  <scroll id="scrollId"
-		style="position: absolute; width: 212px; height: 520px;"
+		style="position: absolute; width: 192px; height: 490px;"
 		scroll-y="{{true}}"
 		@scroll="onScroll"
 		@scrolltop="onScrollTop"
@@ -12,23 +12,23 @@
 		>
 
 		<!-- 内容容器采用 flex 布局 -->
-		<div id="contentContainer" style="position: absolute; padding:100px 0px; width:212px; flex-direction: column;">
+		<div id="contentContainer" style="position: absolute; padding:100px 0px; width:192px; flex-direction: column;">
 		  <!-- 上方加载提示 -->
 		  <text if="{{loadingPrev}}"
-			style="width: 212px; text-align: center; color: #0D91FF; font-size: 24px;padding: 10px 0;">
+			style="width: 192px; text-align: center; color: #0D91FF; font-size: 24px;padding: 10px 0;">
 			加载中...
 		  </text>
 
 		  <!-- 循环显示双页文本 -->
 		  <text for="{{segments}}"
 			id="{{'segment-' + $idx}}"
-			style="width: 212px; text-align: left; color: rgba(255,255,255,{{opacity/100}}); font-size: {{fontSize}}px; font-weight: bold; line-height: {{lineHeight}}px; ">
+			style="width: 192px; text-align: left; color: rgba(255,255,255,{{opacity/100}}); font-size: {{fontSize}}px; font-weight: bold; line-height: {{lineHeight}}px; ">
 			{{$item.text}}
 		  </text>
 
 		  <!-- 下方加载提示 -->
 		  <text if="{{loadingNext}}"
-			style="width: 212px; text-align: center; color: #0D91FF; font-size: 24px;padding: 10px 0;">
+			style="width: 192px; text-align: center; color: #0D91FF; font-size: 24px;padding: 10px 0;">
 			加载中...
 		  </text>
 		</div>
@@ -36,9 +36,9 @@
 
 	  <!-- 底部其他交互按钮 -->
 	  <img show="{{showSetting}}" src="/common/images/mask_up.png" style="position: absolute; top: 0; left: 0;"/>
-	  <img show="{{showSetting}}" src="/common/images/back.png" @click="back" style="position: absolute; left: 49.5px;top: 6.6px;width: 113px;height: 80px;"/>
-	  <img show="{{showSetting}}" src="/common/images/mask_down.png" style="position: absolute; left: 0px; top: 389px;"/>
-	  <img show="{{showSetting}}" src="/common/images/more.png" style="position: absolute; left: 49.5px;top: 433.8px;width: 113px;height: 80px;" @click="gotoSetting"/>
+	  <img show="{{showSetting}}" src="/common/images/back.png" @click="back" style="position: absolute; left: 45px;top: 6px;width: 102px;height: 72px;"/>
+	  <img show="{{showSetting}}" src="/common/images/mask_down.png" style="position: absolute; left: 0px; top: 372px;"/>
+	  <img show="{{showSetting}}" src="/common/images/more.png" style="position: absolute; left: 45px;top: 412px;width: 102px;height: 72px;" @click="gotoSetting"/>
 
 	  <!-- <text style="position: absolute; left: 0px; top: 240px; width: 212px; font-weight:bold; font-size:20px; color:blue;">
 		{{debugOutput}}
@@ -81,15 +81,13 @@
 		currentScrollTop: 0,
 		isPaging: false, // 翻页锁，防止在翻页动画期间重复触发加载导致跳多页
 		pagingTimer: null, // onScroll 去抖定时器
-		lastSaveTime: 0,
-		saveTimer: null,
-		restoreApplied: false,
-		relativePos: null,
-		_savedLine: null,
-		allowSave: false,
-		skipNextSave: false,
-		calibratedOnce: false,
-		_savedCharOffset: null
+		// 新增：滚动精确计算去抖定时器
+		scrollCalcTimer: null,
+		// 新增：双击判定相关
+		lastClickTime: 0,
+		singleClickTimer: null,
+		// 手动常亮标记（双击切换）
+		manualKeepScreenOn: false
 	  },
 	  protected: {
 		cPath: '',
@@ -124,119 +122,157 @@
 	  },
 	  onShow(){
 		var that = this;
-			// 修复：此前先 initReadFile 再异步获取字号，字号变化会导致文本重新排版 -> 视觉上“往前跳一段”
-			// 调整为：先获取字号并计算行高/页面高度，再加载文件并恢复滚动位置。
-			// 读取字号设置后再 initReadFile（唯一影响布局的是字号，透明度/翻页方式不会改变内容高度）
-			storage.get({
-			  key: 'EBOOK_FONT',
-			  success: function(data){
-				if(data){
-				  that.fontSize = parseInt(data);
-				  that.lineHeight = parseInt((-0.01)*(that.fontSize**2) + 1.62*that.fontSize - 3.23);
-				} else {
-				  storage.set({
-					key: 'EBOOK_FONT',
-					value: that.fontSize.toString()
-				  });
-				}
-				that.pageHeigh = Math.floor(that.pageHeigh/that.lineHeight) * that.lineHeight;
-				// 字号确定后再初始化阅读内容与位置恢复
-				that.initReadFile();
-			  },
-			  fail: function(){
-				// 获取失败也继续初始化
-				that.initReadFile();
-			  }
-			});
-			// 其余设置读取保持异步，不影响布局
-			storage.get({
-			  key: 'EBOOK_OPACITY',
-			  success: function(data) {
-				if (data) {
-					that.opacity = parseInt(data)
-					console.log("当前字号："+that.fontSize);
-					console.log("当前透明度："+that.opacity);
-				} else {
-					storage.set({
-						key: 'EBOOK_OPACITY',
-						value: '100'
-					});
-					that.opacity = 100
-				}
-			  },
-			})
-			storage.get({
-			  key: 'EBOOK_SWIPE',
-			  success: function(data) {
-				if (data) {
-					that.swipe = data
-				} else {
-					storage.set({
-						key: 'EBOOK_SWIPE',
-						value: 'column'
-					});
-					that.swipe = 'column'
-				}
-			  },
-			})
-			storage.get({
-			  key: 'EBOOK_AUTO',
-				   success: (data) => {
+		// 读取全局保存的进度，恢复 currentFileOffset 和 persent
+		this.initReadFile();
+		// 读取字号设置
+		storage.get({
+		  key: 'EBOOK_FONT',
+		  success: function(data){
+			if(data){
+			  that.fontSize = parseInt(data);
+			  that.lineHeight = parseInt((-0.01)*(that.fontSize**2) + 1.62*that.fontSize - 3.23);
+			} else {
+			  storage.set({
+				key: 'EBOOK_FONT',
+				value: that.fontSize.toString()
+			  });
+			}
+			that.pageHeigh = Math.floor(that.pageHeigh/that.lineHeight) * that.lineHeight;
+		  },
+		  fail: function(){}
+		});
+		storage.get({
+		  key: 'EBOOK_OPACITY',
+		  success: function(data) {
+			if (data) {
+				that.opacity = parseInt(data)
+				console.log("当前字号："+that.fontSize);
+				console.log("当前透明度："+that.opacity);
+			} else {
+				storage.set({
+					key: 'EBOOK_OPACITY',
+					value: '100'
+				});
+				that.opacity = 100
+			}
+		  },
+		})
+		storage.get({
+		  key: 'EBOOK_SWIPE',
+		  success: function(data) {
+			if (data) {
+				that.swipe = data
+			} else {
+				storage.set({
+					key: 'EBOOK_SWIPE',
+					value: 'column'
+				});
+				that.swipe = 'column'
+			}
+		  },
+		})
+		storage.get({
+		  key: 'EBOOK_AUTO',
+ 			success: (data) => {
 				if(!data)return;
 				const { speed, enable } = JSON.parse(data);
 				if(enable)this.auto = speed;
-			  }
-			})
-			// 不在这里调用 initReadFile，已移动到字号加载回调中
+		  }
+		})
+		// 注意：不在 onShow 立刻滚动（内容可能尚未渲染），改为在加载初始两页后恢复位置
 	  },
 	  onScroll(e){
 		const that = this;
 		that.currentScrollTop = e.scrollY;
-		if(this.skipNextSave) return; // 忽略恢复引发的滚动事件
-		if(!this.allowSave){
-			// 恢复阶段不触发保存，避免覆盖原位置
-			return;
+		// 非分页动画期间也实时记录当前位置用于恢复（解决只能第一页精确的问题）
+		if(!this.isPaging){
+			this.savedScrollOffset = that.currentScrollTop;
 		}
-		// 分页滚动对齐逻辑
+		// 新增：无论是否分页锁，均尝试去抖计算精确百分比
+		this.updatePrecisePercentDebounced();
+		// 如果处于翻页锁定状态，使用去抖判断滚动是否结束再释放锁
 		if(this.isPaging){
 			if(this.pagingTimer) clearTimeout(this.pagingTimer);
 			this.pagingTimer = setTimeout(function(){
 				try{
+					// 计算最近的页面对齐位置并对齐
 					let scrollY = that.currentScrollTop || 0;
 					let page = Math.round(scrollY / that.pageHeigh);
 					let target = page * that.pageHeigh;
 					that.$element("scrollId").scrollTo({ top: target, left: 0, behavior: 'instant' });
+					// 更新 savedScrollOffset 以便保存正确位置
 					that.savedScrollOffset = target;
 					that.isPaging = false;
 				}catch(e){}
-			}, 160);
-			return;
+			}, 160); // 160ms 去抖，视设备可调整
 		}
-		// 非分页滚动：节流自动保存
-		this.scheduleAutoSave();
+	  },
+	  // 新增：去抖触发精确百分比计算
+	  updatePrecisePercentDebounced(){
+		if(this.scrollCalcTimer) clearTimeout(this.scrollCalcTimer);
+		this.scrollCalcTimer = setTimeout(()=>{ this.computePrecisePercent(); }, 120);
+	  },
+	  // 新增：计算精确阅读百分比（按当前滚动位置在两个段落中的相对位置估算字节偏移）
+	  computePrecisePercent(){
+		if(!this.segments || this.segments.length === 0 || allSize === 0) return;
+		const scrollY = this.currentScrollTop;
+		const first = this.segments[0];
+		const second = this.segments.length > 1 ? this.segments[1] : null;
+		const baseOffset = first.offset;
+		const that = this;
+		// 获取第一段高度
+		this.$element('segment-0').getBoundingClientRect({
+		  success: function(r0){
+			let h0 = r0.height || 1; // 防止除零
+			if(!second){
+			  // 只有一段
+			  let ratio0 = Math.min(Math.max(scrollY / h0, 0), 1);
+			  let eff = baseOffset + Math.floor(first.length * ratio0);
+			  that.persent = parseInt(eff * 100 / allSize);
+			  that.savedScrollOffset = that.currentScrollTop; // 同步保存
+			  return;
+			}
+			// 有第二段，再取第二段高度
+			that.$element('segment-1').getBoundingClientRect({
+			  success: function(r1){
+				let h1 = r1.height || 1;
+				let effOffset;
+				if(scrollY <= h0){
+				  let ratio0 = Math.min(Math.max(scrollY / h0, 0), 1);
+				  effOffset = baseOffset + Math.floor(first.length * ratio0);
+				} else {
+				  let y1 = scrollY - h0;
+				  let ratio1 = Math.min(Math.max(y1 / h1, 0), 1);
+				  effOffset = baseOffset + first.length + Math.floor(second.length * ratio1);
+				}
+				that.persent = parseInt(effOffset * 100 / allSize);
+				that.savedScrollOffset = that.currentScrollTop; // 同步保存
+			  },
+			  fail: function(){
+				// 第二段高度获取失败，退化为只按第一段计算
+				let ratio0 = Math.min(Math.max(scrollY / h0, 0), 1);
+				let eff = baseOffset + Math.floor(first.length * ratio0);
+				that.persent = parseInt(eff * 100 / allSize);
+				that.savedScrollOffset = that.currentScrollTop; // 同步保存
+			  }
+			});
+		  },
+		  fail: function(){ /* 获取失败忽略 */ }
+		});
 	  },
 	  //【读取进度】从全局存储中恢复当前书籍的记录（格式 {"book1":{"p":..., "s":..., "o":0}, ...}）
 	  initReadFile(){
 		var that = this;
-		this.allowSave = false; // 恢复完成前禁止保存
-		this.restoreApplied = false;
 		storage.get({
 		  key: SAVED_KEY,
 		  success: function(data){
 			var globalData = {};
 			if(data){ globalData = JSON.parse(data); }
 			if(globalData[that.name] && (globalData[that.name].s || globalData[that.name].s === 0)){
-			  const rec = globalData[that.name];
-			  that.currentFileOffset = rec.s;
-			  that.persent = rec.p || 0;
-			  that.savedScrollOffset = rec.o;
-			  that._savedRelative = (rec.r !== undefined)? rec.r : null;
-			  if(rec.ls !== undefined && rec.ln !== undefined){
-				that._savedLine = { ls: rec.ls, ln: rec.ln };
-			  }
-			  if(rec.charOffset !== undefined){
-				that._savedCharOffset = rec.charOffset;
-			  }
+			  that.currentFileOffset = globalData[that.name].s;
+			  that.persent = globalData[that.name].p || 0;
+			  that.savedScrollOffset = globalData[that.name].o;
+			  
 			} else {
 			  that.currentFileOffset = 0;
 			}
@@ -273,46 +309,37 @@
 		var that = this;
 		this.readFileText(this.currentFileOffset, function(str, bytesRead){
 		  that.segments = [{ text: str, offset: that.currentFileOffset, length: bytesRead }];
+		  // 读取第二页（如果有），读取完成后再恢复滚动位置
 		  let nextOffset = that.currentFileOffset + bytesRead;
 		  if(nextOffset < allSize){
 			that.readFileText(nextOffset, function(str2, bytesRead2){
 			  if(str2){
 				that.segments.push({ text: str2, offset: nextOffset, length: bytesRead2 });
 			  }
+			  // 等待视图渲染后恢复滚动位置（短延时更稳健）
 			  setTimeout(function(){
 				try{
-				  if(!that.restoreApplied){
-					that.skipNextSave = true; // 恢复滚动导致的 onScroll 忽略保存
-					if(that._savedCharOffset != null) that.applyCharOffsetRestore();
-					else if(that._savedLine) that.applyLineRestore();
-					else if(that._savedRelative != null) that.applyRelativePositionRestore();
-					else that.$element("scrollId").scrollTo({ top: that.savedScrollOffset || 0, left: 0, behavior: 'instant' });
-				  }
-				  that.restoreApplied = true;
-				  // 延迟允许保存，确保第二段高度稳定
-				  setTimeout(()=>{ that.allowSave = true; },120);
-				  setTimeout(()=>{ that.skipNextSave = false; },150);
-				  // 调度二次校准，若首次恢复仍有偏差可再次对齐（仅执行一次）
-				  setTimeout(()=>{ that.secondStageCalibration(); }, 220);
-				  console.log("恢复进度（初始化后）："+that.savedScrollOffset+" line="+JSON.stringify(that._savedLine));
+				  that.$element("scrollId").scrollTo({
+					top: that.savedScrollOffset || 0,
+					left: 0,
+					behavior: 'instant'
+				  });
+				  console.log("恢复进度（初始化后）："+that.savedScrollOffset);
+				  that.computePrecisePercent(); // 初始恢复后计算一次精确进度
 				}catch(e){}
 			  }, 80);
 			});
 		  } else {
+			// 只有一页时也恢复滚动
 			setTimeout(function(){
 			  try{
-				if(!that.restoreApplied){
-				  that.skipNextSave = true;
-				  if(that._savedCharOffset != null) that.applyCharOffsetRestore();
-				  else if(that._savedLine) that.applyLineRestore();
-				  else if(that._savedRelative != null) that.applyRelativePositionRestore();
-				  else that.$element("scrollId").scrollTo({ top: that.savedScrollOffset || 0, left: 0, behavior: 'instant' });
-				}
-				that.restoreApplied = true;
-				setTimeout(()=>{ that.allowSave = true; },120);
-				setTimeout(()=>{ that.skipNextSave = false; },150);
-				setTimeout(()=>{ that.secondStageCalibration(); }, 220);
-				console.log("恢复进度（单页）："+that.savedScrollOffset+" line="+JSON.stringify(that._savedLine));
+				that.$element("scrollId").scrollTo({
+				  top: that.savedScrollOffset || 0,
+				  left: 0,
+				  behavior: 'instant'
+				});
+				console.log("恢复进度（单页）："+that.savedScrollOffset);
+				that.computePrecisePercent();
 			  }catch(e){}
 			}, 80);
 		  }
@@ -410,7 +437,7 @@
             }
             that.currentFileOffset = that.segments[0].offset;
             that.persent = parseInt(that.currentFileOffset * 100 / allSize);
-            // 延迟由滚动事件统一保存，避免立即保存导致重进定位偏前
+            that.saveData();
           }
         });
 	  },
@@ -440,6 +467,7 @@
 			that.$element("segment-0").getBoundingClientRect({
 			  success: function(rect){
 				let insertedHeight = rect.height;
+				// 向下滚动 insertedHeight，保持当前内容位置不变
 				that.$element("scrollId").scrollBy({
 				  top: insertedHeight,
 				  left: 0,
@@ -448,10 +476,13 @@
 			  },
 			  fail: function(){}
 			});
-			if(that.segments.length > 2){ that.segments.pop(); }
+			// 若超过两页，移除底部页面
+			if(that.segments.length > 2){
+			  that.segments.pop();
+			}
 			that.currentFileOffset = that.segments[0].offset;
 			that.persent = parseInt(that.currentFileOffset * 100 / allSize);
-			// 滚动结束后由节流保存
+			that.saveData();
 		  }
 		});
 	  },
@@ -471,47 +502,39 @@
 		}, 200);
 	  },
 	  //【保存进度】只更新当前书籍对应的记录，格式 {"book1":{"p":..., "s":..., "o":0}, ...}
-	  saveData(rel){
+	  saveData(){
 		var that = this;
-		const lineInfo = this._savedLine || { ls: 0, ln: 0 };
-		const charOffset = this._savedCharOffset || this.currentFileOffset;
-		// 兼容旧阅读器：保留已有记录(如 bookmarks)并只更新进度相关字段
+		// 保存前尝试更新一次精确百分比（避免尚未触发去抖时离开）
+		this.computePrecisePercent();
 		storage.get({
 		  key: SAVED_KEY,
 		  success: function(data){
 			var globalData = {};
-			if(data){
-			  try { globalData = JSON.parse(data); } catch(e){ globalData = {}; }
-			}
-			let rec = globalData[that.name] || {};
-			// 旧版字段（保持）
-			rec.s = that.currentFileOffset; // 顶部段起始偏移
-			rec.p = that.persent;           // 百分比（旧逻辑依赖）
-			rec.o = that.currentScrollTop;  // 垂直滚动像素位置（旧逻辑）
-			// 新版精细定位字段
-			rec.r = (rel !== undefined ? rel : that.relativePos); // 相对比例 0~2
-			rec.ls = lineInfo.ls;           // 段索引
-			rec.ln = lineInfo.ln;           // 段内行号（行索引-按行高）
-			rec.charOffset = charOffset;    // 精确字符偏移(估算)
-			// 其他如 bookmarks / 扩展字段不动
-			globalData[that.name] = rec;
-			storage.set({ key: SAVED_KEY, value: JSON.stringify(globalData) });
+			if(data){ globalData = JSON.parse(data); }
+			globalData[that.name] = {
+			  s: that.currentFileOffset,
+			  p: that.persent,
+			  o: that.currentScrollTop
+			};
+			storage.set({
+			  key: SAVED_KEY,
+			  value: JSON.stringify(globalData)
+			});
 		  },
 		  fail: function(){
 			var globalData = {};
-			let rec = {};
-			rec.s = that.currentFileOffset;
-			rec.p = that.persent;
-			rec.o = that.currentScrollTop;
-			rec.r = (rel !== undefined ? rel : that.relativePos);
-			rec.ls = lineInfo.ls;
-			rec.ln = lineInfo.ln;
-			rec.charOffset = charOffset;
-			globalData[that.name] = rec;
-			storage.set({ key: SAVED_KEY, value: JSON.stringify(globalData) });
+			globalData[that.name] = {
+			  s: that.currentFileOffset,
+			  p: that.persent,
+			  o: that.currentScrollTop
+			};
+			storage.set({
+			  key: SAVED_KEY,
+			  value: JSON.stringify(globalData)
+			});
 		  }
 		});
-		console.log('保存数据-charOffset: '+ this.name + ' offset=' + charOffset + ' ls=' + lineInfo.ls + ' ln=' + lineInfo.ln + ' r=' + (rel !== undefined ? rel : this.relativePos));
+		console.log('保存数据: '+ this.name + ': ' + this.currentFileOffset + ' ' + this.persent + ' ' + this.currentScrollTop);
 	  },
 	  onHide(){
 		// 先保存进度
@@ -524,6 +547,9 @@
 					message: '已关闭自动翻页',
 					duration: 2000
 				});
+		}
+		// 无论来源（自动/手动）离开页面都关闭常亮
+		if(this.manualKeepScreenOn || autoInterval === null){
 			brightness.setKeepScreenOn({ keepScreenOn: false });
 		}
 	  },
@@ -531,12 +557,20 @@
 		if (this.auto) {
 			clearInterval(autoInterval);
 			autoInterval = null;
-			brightness.setKeepScreenOn({ keepScreenOn: false });
 		}
 		// 清理 onScroll 去抖定时器
 		if(this.pagingTimer){
 			clearTimeout(this.pagingTimer);
 			this.pagingTimer = null;
+		}
+		// 清理单击定时器
+		if(this.singleClickTimer){
+			clearTimeout(this.singleClickTimer);
+			this.singleClickTimer = null;
+		}
+		// 退出时关闭常亮
+		if(this.manualKeepScreenOn || autoInterval === null){
+			brightness.setKeepScreenOn({ keepScreenOn: false });
 		}
 	  },
 	  onBackPress(){
@@ -555,23 +589,35 @@
 		});
 	  },
   	onTxtClick(event) {
-		// console.log(JSON.stringify(event));
-		if (this.swipe === 'column') {
-			this.showSetting = !this.showSetting;
-		} else {
-			if (this.showSetting) {
-				this.showSetting = false;
+		// 新增：双击检测。双击 300ms 内第二次点击触发屏幕常亮切换，单击延后执行原逻辑
+		const now = Date.now();
+		if (this.lastClickTime && (now - this.lastClickTime) < 300) {
+			// 认定为双击
+			if (this.singleClickTimer) { clearTimeout(this.singleClickTimer); this.singleClickTimer = null; }
+			this.lastClickTime = 0;
+			this.toggleKeepScreenOn();
+			return;
+		}
+		this.lastClickTime = now;
+		if (this.singleClickTimer) { clearTimeout(this.singleClickTimer); }
+		this.singleClickTimer = setTimeout(() => {
+			// ...existing single click behavior...
+			if (this.swipe === 'column') {
+				this.showSetting = !this.showSetting;
 			} else {
-				if (event.offsetY <= 178) {
-					this.lastPage();
-				} else if (event.offsetY <= 342) {
-					this.showSetting = !this.showSetting;
+				if (this.showSetting) {
+					this.showSetting = false;
 				} else {
-					this.nextPage();
+					if (event.offsetY <= 178) {
+						this.lastPage();
+					} else if (event.offsetY <= 342) {
+						this.showSetting = !this.showSetting;
+					} else {
+						this.nextPage();
+					}
 				}
 			}
-
-		}
+		}, 300);
 	},
 	onTxtLongPress(event) {
   		if (this.auto) {
@@ -582,19 +628,31 @@
 					message: '已关闭自动翻页',
 					duration: 2000
 				});
-				brightness.setKeepScreenOn({ keepScreenOn: false });
+				// 若仍有手动常亮则保持，否则关闭
+				brightness.setKeepScreenOn({ keepScreenOn: this.manualKeepScreenOn });
 				return;
 			}
 
 			autoInterval = setInterval(() => {
 				this.nextPage();
-				}, this.auto*1000);
+			}, this.auto*1000);
 			prompt.showToast({
 				message: '已开启自动翻页',
 				duration: 2000
 			});
 			brightness.setKeepScreenOn({ keepScreenOn: true });
 		}
+	},
+	// 新增：双击切换屏幕常亮
+	toggleKeepScreenOn(){
+		this.manualKeepScreenOn = !this.manualKeepScreenOn;
+		// 若自动翻页开启则始终保持常亮；否则根据手动标记
+		const keep = this.manualKeepScreenOn || !!autoInterval;
+		brightness.setKeepScreenOn({ keepScreenOn: keep });
+		prompt.showToast({
+			message: this.manualKeepScreenOn ? '已开启常亮(双击)' : '已关闭常亮(双击)',
+			duration: 2000
+		});
 	},
 	onTxtSwipe(event){
 		if(event.direction === 'right'){
@@ -610,7 +668,7 @@
 			behavior: 'smooth'
 		  });
 		// 预计动画时长后释放锁（延长为 600ms 以适配较慢设备）
-		setTimeout(() => { this.isPaging = false; }, 600);
+		setTimeout(() => { this.isPaging = false; }, 300);
 	},
 	nextPage() {
 		// 启动分页锁，防止在动画期间触发多次加载
@@ -621,209 +679,16 @@
 			behavior: 'smooth'
 		  });
 		// 预计动画时长后释放锁（延长为 600ms 以适配较慢设备）
-		setTimeout(() => { this.isPaging = false; }, 600);
-	  },
-	  scheduleAutoSave(){
-		if(!this.allowSave) return; // 未完成恢复不保存
-		if(this.saveTimer){ clearTimeout(this.saveTimer); }
-		this.saveTimer = setTimeout(()=>{
-			this.saveTimer = null;
-			this.computeAndSaveLinePosition();
-		}, 400);
-	  },
-	  // 行级保存：计算当前滚动位于第几段、第几行（行号按行高直接取整，更稳定）
-	  computeAndSaveLinePosition(){
-		const paddingTop = 100;
-		const scrollTop = this.currentScrollTop;
-		this.$element('segment-0').getBoundingClientRect({
-		  success: (r0) => {
-			const h0 = r0.height;
-			this.$element('segment-1').getBoundingClientRect({
-			  success: (r1) => { this._finishLineSave(scrollTop, paddingTop, h0, r1.height); },
-			  fail: () => { this._finishLineSave(scrollTop, paddingTop, h0, 0); }
-			});
-		  },
-		  fail: () => { this.computeAndSaveRelativePosition(); }
-		});
-	  },
-	  // 新的行保存逻辑：使用 inside 像素 / lineHeight 直接得到行索引，减少高度变化造成的比例误差
-	  _finishLineSave(scrollTop, paddingTop, h0, h1){
-		if(!this.lineHeight){ // 兜底
-		  this.computeAndSaveRelativePosition();
-		  return;
-		}
-		let inside = scrollTop - paddingTop;
-		if(inside < 0) inside = 0;
-		let segIdx = 0; 
-		let lineInSeg = 0;
-		let charOffset = this.currentFileOffset;
-		const seg0Lines = this.lineHeight? Math.max(1, Math.round(h0 / this.lineHeight)) : 1;
-		const seg1Lines = this.lineHeight? Math.max(1, Math.round(h1 / this.lineHeight)) : 1;
-
-		if(inside <= h0 || h0 === 0){
-		  segIdx = 0;
-		  const pixelInSeg = Math.min(Math.max(inside,0), h0);
-		  lineInSeg = Math.floor(pixelInSeg / this.lineHeight);
-		  const ratio0 = h0? (pixelInSeg / h0) : 0; // 用于估算字符偏移
-		  charOffset += Math.round(ratio0 * (this.segments[0]? this.segments[0].length : 0));
-		}else{
-		  segIdx = 1;
-		  let rest = inside - h0;
-		  if(rest < 0) rest = 0;
-		  const pixelInSeg = Math.min(rest, h1);
-		  lineInSeg = Math.floor(pixelInSeg / this.lineHeight);
-		  const ratio1 = h1? (pixelInSeg / h1) : 0;
-		  charOffset += (this.segments[0]? this.segments[0].length : 0) + Math.round(ratio1 * (this.segments[1]? this.segments[1].length : 0));
-		}
-		// 行索引越界修正
-		if(segIdx===0 && lineInSeg >= seg0Lines) lineInSeg = seg0Lines -1;
-		if(segIdx===1 && lineInSeg >= seg1Lines) lineInSeg = seg1Lines -1;
-		this._savedLine = { ls: segIdx, ln: lineInSeg };
-		this._savedCharOffset = charOffset;
-		this._finishRelativeSave(scrollTop, paddingTop, h0, h1);
-	  },
-	  applyLineRestore(){
-		const paddingTop = 100;
-		if(!this._savedLine) return;
-		const { ls, ln } = this._savedLine;
-		this.$element('segment-0').getBoundingClientRect({
-		  success: (r0) => {
-			let h0 = r0.height;
-			this.$element('segment-1').getBoundingClientRect({
-			  success: (r1) => { this._applyLine(ls, ln, h0, r1.height, paddingTop); },
-			  fail: () => { this._applyLine(ls, ln, h0, 0, paddingTop); }
-			});
-		  },
-		  fail: () => { if(this._savedRelative!=null) this.applyRelativePositionRestore(); }
-		});
-	  },
-	  // 按行索引恢复：直接使用 lineIndex * lineHeight，避免比例反推误差
-	  _applyLine(ls, ln, h0, h1, paddingTop){
-		if(!this.lineHeight){ this.applyRelativePositionRestore(); return; }
-		let target = paddingTop;
-		if(ls === 0){
-		  const maxIndex0 = this.lineHeight? Math.max(0, Math.floor(h0 / this.lineHeight) - 1) : 0;
-		  const useIdx = Math.min(ln, maxIndex0);
-		  target += useIdx * this.lineHeight;
-		}else{
-		  target += h0; // 先跳过第一段
-		  const maxIndex1 = this.lineHeight? Math.max(0, Math.floor(h1 / this.lineHeight) - 1) : 0;
-		  const useIdx = Math.min(ln, maxIndex1);
-		  target += useIdx * this.lineHeight;
-		}
-		this.$element('scrollId').scrollTo({ top: target, left:0, behavior:'instant' });
-		this.currentScrollTop = target;
-	  },
-	  applyCharOffsetRestore(){
-		const offset = this._savedCharOffset;
-		if(offset == null) return;
-		const paddingTop = 100;
-		let target = paddingTop;
-		// 遍历段落，找到包含该偏移的段落并计算滚动位置
-		for(let i = 0; i < this.segments.length; i++){
-		  const seg = this.segments[i];
-		  if(offset >= seg.offset && offset < (seg.offset + seg.length)){
-			const charIndex = offset - seg.offset;
-			const ratio = seg.length ? (charIndex / seg.length) : 0;
-			const segHeight = i === 0 ? this.$element('segment-0').getBoundingClientRect().height : this.$element('segment-1').getBoundingClientRect().height;
-			target += ratio * segHeight;
-			break;
-		  }
-		  if(i === 0) target += this.$element('segment-0').getBoundingClientRect().height;
-		}
-		this.$element('scrollId').scrollTo({ top: target, left: 0, behavior: 'instant' });
-		this.currentScrollTop = target;
-	  },
-	  computeAndSaveRelativePosition(){
-		const paddingTop = 100; // 与模板中 contentContainer padding 一致
-		const scrollTop = this.currentScrollTop;
-		let h0 = 0, h1 = 0;
-		// 测量第一段高度
-		this.$element('segment-0').getBoundingClientRect({
-		  success: (r0) => {
-			h0 = r0.height;
-			// 测量第二段（可能不存在）
-			this.$element('segment-1').getBoundingClientRect({
-			  success: (r1) => { h1 = r1.height; this._finishRelativeSave(scrollTop, paddingTop, h0, h1); },
-			  fail: () => { this._finishRelativeSave(scrollTop, paddingTop, h0, 0); }
-			});
-		  },
-		  fail: () => { this.saveData(); }
-		});
-	  },
-	  _finishRelativeSave(scrollTop, paddingTop, h0, h1){
-		let inside = scrollTop - paddingTop;
-		if(inside < 0) inside = 0;
-		let r = 0;
-		if(inside <= h0 || h0 === 0){
-		  r = h0? (inside / h0) : 0;
-		} else {
-		  let rest = inside - h0;
-		  if(h1 <= 0){ r = 1; }
-		  else r = 1 + rest / h1; // 1~2 表示第二段比例
-		}
-		this.relativePos = r;
-		this.saveData(r);
-	  },
-	  applyRelativePositionRestore(){
-		const paddingTop = 100;
-		let r = this._savedRelative;
-		if(r == null){ return; }
-		this.$element('segment-0').getBoundingClientRect({
-		  success: (r0) => {
-			let h0 = r0.height;
-			this.$element('segment-1').getBoundingClientRect({
-			  success: (r1) => { this._applyR(r, h0, r1.height, paddingTop); },
-			  fail: () => { this._applyR(r, h0, 0, paddingTop); }
-			});
-		  },
-		  fail: () => {
-			// 回退到旧逻辑
-			this.$element("scrollId").scrollTo({ top: this.savedScrollOffset || 0, left:0, behavior:'instant'});
-		  }
-		});
-	  },
-	  _applyR(r, h0, h1, paddingTop){
-		let target = 0;
-		if(r <= 1){
-		  target = paddingTop + r * h0;
-		}else{
-		  target = paddingTop + h0 + (h1>0 ? (r-1)*h1 : 0);
-		}
-		this.$element('scrollId').scrollTo({ top: target, left:0, behavior:'instant' });
-		this.currentScrollTop = target;
-	  },
-	  // 二次校准：在页面渲染稳定后再按当前段高/比例重新对齐一次，避免首次渲染测量误差导致回到段首
-	  secondStageCalibration(){
-		if(this.calibratedOnce) return;
-		this.calibratedOnce = true;
-		// 在校准期间禁止保存，防止误覆盖
-		this.skipNextSave = true;
-		this.allowSave = false;
-		const that = this;
-		setTimeout(()=>{
-			// 优先按首字符偏移恢复；若失败则按行/比例恢复
-			if(that._savedCharOffset != null){
-				that.applyCharOffsetRestore();
-			} else if(that._savedLine){
-				that.applyLineRestore();
-			} else if(that._savedRelative != null){
-				that.applyRelativePositionRestore();
-			}
-			// 轻微延时后恢复保存能力
-			setTimeout(()=>{
-				that.skipNextSave = false;
-				that.allowSave = true;
-			}, 160);
-		}, 120);
+		setTimeout(() => { this.isPaging = false; }, 300);
 	  }
 	}
   </script>
 
 <style>
 .page {
-	width: 212px;
-	height: 520px;
+	width: 192px;
+	height: 490px;
 	background-color: #000000;
 }
 </style>
+

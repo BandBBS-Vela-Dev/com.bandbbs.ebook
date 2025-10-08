@@ -1,0 +1,105 @@
+{
+  "package": "com.bandbbs.ebook",
+  "name": "电子书",
+  "versionName": "3.1",
+  "versionCode": 250804,
+  "minPlatformVersion": 1100,
+  "icon": "/common/logo.png",
+  "simulationVersion": "default",
+  "deviceTypeList": [
+    "watch"
+  ],
+  "features": [
+    {
+      "name": "system.router"
+    },
+    {
+      "name": "system.storage"
+    },
+    {
+      "name": "system.prompt"
+    },
+    {
+      "name": "system.file"
+    },
+    {
+      "name": "system.request"
+    },
+    {
+      "name": "system.fetch"
+    },
+    {
+      "name": "system.network"
+    },
+    {
+      "name": "system.interconnect"
+    },
+    {
+      "name": "system.configuration"
+    },
+    {
+      "name": "system.app"
+    },
+    {
+      "name": "system.brightness"
+    }
+  ],
+  "config": {
+    "logLevel": "log",
+    "designWidth": 192
+  },
+  "router": {
+    "entry": "pages/index",
+    "pages": {
+      "pages/index": {
+        "component": "index",
+        "launchMode": "singleTask"
+      },
+      "pages/detail": {
+        "component": "detail"
+      },
+      "pages/detailsetting": {
+        "component": "detailsetting"
+      },
+      "pages/readPresent": {
+        "component": "readPresent"
+      },
+      "pages/autoRead": {
+        "component": "autoRead"
+      },
+      "pages/opacity": {
+        "component": "opacity"
+      },
+      "pages/more": {
+        "component": "more"
+      },
+      "pages/about": {
+        "component": "about"
+      },
+      "pages/fontSetting": {
+        "component": "fontSetting"
+      },
+      "pages/push": {
+        "component": "push"
+      },
+      "pages/info": {
+        "component": "info"
+      },
+      "pages/swipe": {
+        "component": "swipe"
+      }
+    }
+  },
+  "display": {
+    "backgroundColor": "#000000"
+  },
+  "minAPILevel": 1,
+  "packageInfo": {
+    "toolkit": "2.0.4",
+    "timeStamp": "2025-08-04T16:03:01.385Z",
+    "node": "v23.11.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "component": true
+  }
+}

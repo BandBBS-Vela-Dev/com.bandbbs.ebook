@@ -1,0 +1,36 @@
+<template>
+	<div class="page">
+
+    <div static style="position: absolute;left: 0px;top: 0px;width: 192px;height: 490px;">
+      <img static src="/common/images/about.png" style="position: absolute;left: 0px;top: 0px;"/>
+
+      <text static style="position: absolute;left: 19px;top: 154px;width: 46px;height: 42px;font-weight: bold;font-size: 32px;color: rgba(255, 255, 255, 0.6);">{{version}}</text>
+	    <img static src="/common/images/back.png" @click="back('')" style="position: absolute;left: 45px;top: 6px;width: 102px;height: 72px;"/>
+    </div>
+
+	</div>
+  </template>
+
+  <script>
+  import router from '@system.router'
+  import app from '@system.app'
+  export default {
+    private: {
+      version: app.getInfo().versionName
+    },
+    back() {
+      router.back();
+    }
+  }
+  </script>
+
+  <style>
+  .page {
+	  width: 192px;
+	  height: 490px;
+	  background-color: #000000;
+  }
+
+  /* 更多信息样式 */
+
+  </style>

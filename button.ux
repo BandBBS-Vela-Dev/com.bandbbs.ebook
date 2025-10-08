@@ -1,0 +1,324 @@
+<template>
+  <div class="page" style="flex-direction: column;">
+	<div style="width: 336px;padding-left: 15px;padding-right: 15px;padding-top: 19px;">
+		<img src="/common/images/back1.png" @click="back('')" style="width:40px;height: 40px;"/>
+		<text style="font-size: 35px;font-weight:bold;line-height: 40px;color: white;width: 226px;text-align: center;">
+			底栏按钮功能
+		</text>
+		<!-- <img src="/common/images/more.png" @click="openMenu('new')" style="width:40px;height: 40px;"/> -->
+	</div>
+	<list class="list">
+		<list-item type="item" class="item" style="height: 42px;background-color:black;padding-top:0px;padding-bottom:2px;">
+			<text style="font-size: 35px;color:rgb(204, 204, 204);font-weight:bold;line-height: 40px;width: 324px;height:42px;text-align: center;">
+				点击功能
+			</text>
+		</list-item>
+		<list-item type="item" class="item" @click="select('changePage')">
+		    <text class="itemtext">翻页</text>
+			<img src={{changePage}} style="width:40px;height: 40px;"/>
+		</list-item>
+		<list-item type="item" class="item" @click="select('changeFontSize')">
+		    <text class="itemtext">字号调整</text>
+			<img src={{changeFontSize}} style="width:40px;height: 40px;"/>
+		</list-item>
+		<list-item type="item" class="item" style="height: 42px;background-color:black;padding-top:0px;padding-bottom:2px;">
+			<text style="font-size: 35px;color:rgb(204, 204, 204);font-weight:bold;line-height: 40px;width: 324px;height:42px;text-align: center;">
+				长按功能
+			</text>
+		</list-item>
+		<list-item type="item" class="item" @click="select('close')">
+		    <text class="itemtext">关闭</text>
+			<img src={{close}} style="width:40px;height: 40px;"/>
+		</list-item>
+		<list-item type="item" class="item" @click="select('changeFontSize2')">
+		    <text class="itemtext">字号调节</text>
+			<img src={{changeFontSize2}} style="width:40px;height: 40px;"/>
+		</list-item>
+		<list-item type="item" class="item" @click="select('percentPage')">
+		    <text class="itemtext">快速翻页</text>
+			<img src={{percentPage}} style="width:40px;height: 40px;"/>
+		</list-item>
+	</list>
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+import storage from '../../common/storage.js'
+import app from '@system.app'
+
+export default {
+	// ÷﹢‐+-＋－×÷％
+  // 页面级组件的数据模型，影响传入数据的覆盖机制：private内定义的属性不允许被覆盖
+  private: {
+	changePage:"/common/images/false.png",
+	changeFontSize:"/common/images/false.png",
+	close:"/common/images/false.png",
+	changeFontSize2:"/common/images/false.png",
+	percentPage:"/common/images/false.png",
+
+  },
+  protected: {
+    cPath: '',
+  	name: ''
+  },
+  onInit() {
+	var that= this
+	//长按功能
+	storage.get({
+      	key: 'EBOOK_LONGPRESS',
+      	success: function(data) {
+        	if (data=="off") {
+				that.close="/common/images/true.png"
+				that.changeFontSize2="/common/images/false.png"
+				that.percentPage="/common/images/false.png"
+        	} else if(data=="fontSize") {
+				that.changeFontSize2="/common/images/true.png"
+				that.percentPage="/common/images/false.png"
+				that.close="/common/images/false.png"
+			} else if(data=="percentPage") {
+				that.percentPage="/common/images/true.png"
+				that.changeFontSize2="/common/images/false.png"
+				that.close="/common/images/false.png"
+			}
+      	},
+      	fail: function(data, code) {
+        	////console.log(`handling fail, code = ${code}`)
+      	}
+    })
+
+	//点击功能
+	storage.get({
+    	key: 'EBOOK_CLICK',
+    	success: function(data) {
+    		if (data=="page") {
+				that.changePage="/common/images/true.png"
+				that.changeFontSize="/common/images/false.png"
+    		} else if(data=="fontSize") {
+				that.changeFontSize="/common/images/true.png"
+				that.changePage="/common/images/false.png"
+			}
+    	},
+    	fail: function(data, code) {
+    		////console.log(`handling fail, code = ${code}`)
+    	}
+    })
+
+  },
+  onReady(){
+	  // this.resetList();
+  },
+  resetList(){
+
+  },
+  onShow(){
+
+  },
+
+  select(fun){
+	if (fun=='close'){
+		if(this.close=="/common/images/false.png"){
+			this.close="/common/images/true.png"
+			this.changeFontSize2="/common/images/false.png"
+			this.percentPage="/common/images/false.png"
+			storage.set({
+	  			key: 'EBOOK_LONGPRESS',
+	  			value: 'off',
+	  			success: function(data) {
+	  				//console.log('handling success')
+	  			},
+	  			fail: function(data, code) {
+	  				//console.log(`handling fail, code = ${code}`)
+	  			}
+	  		})
+		}
+	}else if(fun=='changeFontSize2'){
+		if(this.changeFontSize2=="/common/images/false.png"){
+			this.changeFontSize2="/common/images/true.png"
+			this.percentPage="/common/images/false.png"
+			this.close="/common/images/false.png"
+			storage.set({
+	  			key: 'EBOOK_LONGPRESS',
+	  			value: 'fontSize',
+	  			success: function(data) {
+	  				//console.log('handling success')
+	  			},
+	  			fail: function(data, code) {
+	  				//console.log(`handling fail, code = ${code}`)
+	  			}
+	  		})
+		}
+	}else if(fun=='percentPage'){
+		if(this.percentPage=="/common/images/false.png"){
+		  	this.percentPage="/common/images/true.png"
+		  	this.changeFontSize2="/common/images/false.png"
+		  	this.close="/common/images/false.png"
+			  storage.set({
+	  			key: 'EBOOK_LONGPRESS',
+	  			value: 'percentPage',
+	  			success: function(data) {
+	  				//console.log('handling success')
+	  			},
+	  			fail: function(data, code) {
+	  				//console.log(`handling fail, code = ${code}`)
+	  			}
+	  		})
+		}
+	}
+	if (fun=='changePage'){
+		if(this.changePage=="/common/images/false.png"){
+			this.changePage="/common/images/true.png"
+			this.changeFontSize="/common/images/false.png"
+			storage.set({
+	  			key: 'EBOOK_CLICK',
+	  			value: 'page',
+	  			success: function(data) {
+	  				//console.log('handling success')
+	  			},
+	  			fail: function(data, code) {
+	  				//console.log(`handling fail, code = ${code}`)
+	  			}
+	  		})
+	  	}
+	}else if(fun=='changeFontSize'){
+		if(this.changeFontSize=="/common/images/false.png"){
+			this.changeFontSize="/common/images/true.png"
+			this.changePage="/common/images/false.png"
+			storage.set({
+	  			key: 'EBOOK_CLICK',
+	  			value: 'fontSize',
+	  			success: function(data) {
+	  				//console.log('handling success')
+	  			},
+	  			fail: function(data, code) {
+	  				//console.log(`handling fail, code = ${code}`)
+	  			}
+	  		})
+	  	}
+	}
+	},
+
+  fileTitleFun(){
+	  if(this.fileTitle=="/common/images/false.png"){
+		this.fileTitle="/common/images/true.png"
+		this.timeDisplay=="/common/images/false.png"
+	  }else{
+		this.fileTitle="/common/images/false.png"
+		this.timeDisplay=="/common/images/true.png"
+	  }
+  },
+  onBackPress(){
+	  //console.log('onBackPress');
+	  // this.resetList();
+  },
+  selectFile(item){
+	  router.push({
+	    uri: '/pages/detail'
+	  })
+  },
+  routerTo(url) {
+    // 跳转到应用内的某个页面，router用法详见：文档->接口->页面路由
+	router.push({
+      uri: '/pages/' + url
+	})
+  },
+  back(){
+  	router.back();
+  },
+  exit(){
+	  app.terminate();
+  }
+}
+</script>
+
+<style>
+.page {
+	width: 336px;
+	height: 480px;
+	background-color: #000000;
+}
+
+/* 更多信息样式 */
+.more-info {
+  width: 335px;
+  background-color: rgb(0,0,0);
+}
+
+.caltext {
+	width: 320px;
+	lines: 4;
+	text-overflow: clip;
+	font-size: 30px;
+	color: rgb(255,255,255);
+	text-align: left;
+	height: 160px;
+}
+
+.list {
+	width: 336px;
+	height: 400px;
+	position: absolute;
+	top:72px;
+	/* background-color: red; */
+}
+
+.item {
+	height: 102px;
+	margin: 4px;
+	background-color: #262626;
+	border-radius: 30px;
+	align-items: center;
+}
+
+.itemtext {
+	font-size: 35px;
+	line-height: 40px;
+	width: 265px;
+	font-weight: bold;
+	color: white;
+	margin-left: 6px;
+	text-overflow: ellipsis;
+	lines: 1;
+	padding-left:15px;
+	padding-right:15px;
+}
+
+.itemtext2 {
+	font-size: 30px;
+	line-height: 40px;
+	width: 320px;
+	color: #bbbbbb;
+	margin-left: 6px;
+	text-overflow: ellipsis;
+	lines: 1;
+	padding-left:15px;
+	padding-right:15px;
+	padding-top:15px;
+}
+
+.calbtn1 {
+	color: rgb(191,98,59);
+	font-size: 30px;
+	background-color: rgb(20,20,20);
+	border-radius: 15px;
+	margin: 4px;
+}
+
+.calbtn2 {
+	color: rgb(255,255,255);
+	font-size: 30px;
+	background-color: rgb(20,20,20);
+	border-radius: 15px;
+	margin: 4px;
+}
+
+.infos {
+	width: 296px;
+	text-align: center;
+	font-size: 26px;
+	line-height: 35px;
+	color: white;
+	padding: 4px;
+	text-overflow: ellipsis;
+}
+</style>
