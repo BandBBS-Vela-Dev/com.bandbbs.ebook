@@ -1,0 +1,169 @@
+<template>
+  <div class="page" style="flex-direction: column;">
+	<img static src="/common/images/back.png" @click="back('')" style="position: absolute;left: 45px;top: 6px;width: 102px;height: 72px;"/>
+	<text style="position: absolute;left: 0px;top: 84.6px;width: 192px;height: 42px;font-size: 32px;font-weight: bold;color: white;text-align: center;">屏幕常亮</text>
+	<text style="position: absolute;left: 0px;top: 160px;width: 192px;height: 42px;font-size: 32px;font-weight: bold;color: white;text-align: center;">开关</text>
+	<img static src="/common/images/Switch_ON.png" style="position: absolute;left: 45px;top: 222px;width: 102px;height: 72px;" @click="onClick" if="{{enable}}"/>
+	<img static src="/common/images/Switch_OFF.png" style="position: absolute;left: 45px;top: 222px;width: 102px;height: 72px;" @click="onClick" else/>
+	<number style="position: absolute; top: 139.6px;" max="60" min="1" step="1" unit="s" value="{{speed}}" @change="change"></number>
+  </div>
+</template>
+<script>
+import router from '@system.router'
+import app from '@system.app'
+import brightness from '@system.brightness'
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+
+export default {
+data: {
+  version: '',
+  keepScreenOn: false,
+  enable: false, // 界面开关状态
+  speed: 30 // 数字组件默认值
+},
+onInit() {
+  this.version = app.getInfo().versionName
+  const that = this
+  storage.get({
+    key: 'keepScreenOn',
+    success: function(data) {
+      that.keepScreenOn = (data === 'true')
+      that.enable = that.keepScreenOn // 同步界面显示用的enable
+      if (that.keepScreenOn) {
+        that.setKeepScreenOn(true)
+      }
+    }
+  })
+},
+onClick() {
+  this.enable = !this.enable
+  this.keepScreenOn = this.enable
+  const val = this.enable
+  const that = this
+  storage.set({
+    key: 'keepScreenOn',
+    value: val.toString(),
+    success() {
+      that.setKeepScreenOn(val)
+    }
+  })
+},
+change(e) {
+  this.speed = e.value // 保留数值, 便于后续逻辑扩展
+},
+setKeepScreenOn(keepOn) {
+  brightness.setKeepScreenOn({
+    keepScreenOn: keepOn,
+    success: function() {
+      console.log('设置屏幕常亮成功')
+      prompt.showToast({
+        message: keepOn ? '已开启常亮' : '已关闭常亮',
+        duration: 1000
+      })
+    },
+    fail: function(data, code) {
+      console.log(`设置屏幕常亮失败，错误码：${code}`)
+      prompt.showToast({
+        message: '设置失败，设备可能不支持',
+        duration: 2000
+      })
+    }
+  })
+},
+back() {
+  router.back()
+}
+}
+</script>
+
+<style>
+.page {
+  width: 192px;
+  height: 490px;
+  background-color: #000000;
+}
+.more-info {
+  width: 335px;
+  background-color: rgb(0, 0, 0);
+}
+.prewText {
+  width: 288px;
+  height: 260px;
+  text-overflow: ellipsis;
+  color: rgb(255, 255, 255);
+  text-align: center;
+}
+.prew {
+  width: 324px;
+  height: 296px;
+  position: absolute;
+  top: 72px;
+  left: 6px;
+  border-width: 4px;
+  border-color: #262626;
+  background-color: black;
+  border-radius: 30px;
+  padding: 18px;
+}
+.item {
+  position: absolute;
+  top: 376px;
+  left: 6px;
+  height: 102px;
+  width: 324px;
+  background-color: #262626;
+  border-radius: 30px;
+  padding: 20px;
+  flex-direction: row;
+}
+.itemtext {
+  font-size: 36px;
+  font-weight: bold;
+  height: 68px;
+  width: 102px;
+  color: white;
+  text-align: center;
+  text-overflow: ellipsis;
+  lines: 1;
+  padding: 10px;
+  margin-right: 9px;
+  background-color: #262626;
+  border-radius: 12px;
+}
+.itemtext2 {
+  font-size: 30px;
+  line-height: 40px;
+  width: 320px;
+  color: #bbbbbb;
+  margin-left: 6px;
+  text-overflow: ellipsis;
+  lines: 1;
+  padding-left: 15px;
+  padding-right: 15px;
+  padding-top: 15px;
+}
+.calbtn1 {
+  color: rgb(191, 98, 59);
+  font-size: 30px;
+  background-color: rgb(20, 20, 20);
+  border-radius: 15px;
+  margin: 4px;
+}
+.calbtn2 {
+  color: rgb(255, 255, 255);
+  font-size: 30px;
+  background-color: rgb(20, 20, 20);
+  border-radius: 15px;
+  margin: 4px;
+}
+.infos {
+  width: 296px;
+  text-align: center;
+  font-size: 26px;
+  line-height: 35px;
+  color: white;
+  padding: 4px;
+  text-overflow: ellipsis;
+}
+</style>
