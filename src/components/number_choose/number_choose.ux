@@ -1,7 +1,7 @@
 <template>
     <div class="number_choose" style="{{style}}">
         <img static onclick="add" onlongpress="addL" ontouchend="end" src="/common/images/plus.png" class="img" style="top: 0px;" />
-        <text >{{ value_ + unit }}</text>
+        <text>{{ value + unit }}</text>
         <img static onclick="minus" onlongpress="minusL" ontouchend="end" src="/common/images/minis.png" class="img" style="bottom: 0px;" />
     </div>
 </template>
@@ -30,27 +30,20 @@ export default {
             default: "",
         }
     },
-    data: {
-        value_: 0,
-    },
-    onInit() {
-        this.value_ = parseFloat(this.value || this.min);
-        this.$watch("value", "onValueChange")
-    },
+
     add(){
-        if (this.value_ < this.max) {
-            this.value_ += parseFloat(this.step);
+        const currentValue = parseFloat(this.value);
+        const step = parseFloat(this.step);
+        if (currentValue < this.max) {
+            this.$emit("change", { value: currentValue + step });
         }
-        this.$emit("change", {value:this.value_});
     },
     minus(){
-        if (this.value_ > this.min) {
-            this.value_ -= parseFloat(this.step);
+        const currentValue = parseFloat(this.value);
+        const step = parseFloat(this.step);
+        if (currentValue > this.min) {
+            this.$emit("change", { value: currentValue - step });
         }
-        this.$emit("change", { value: this.value_ });
-    },
-    onValueChange(value){
-    	this.value_ = value;
     },
     addL() {
         this.end();
@@ -73,9 +66,9 @@ export default {
 }
 .img {
 	position: absolute;
-	left: 49.5px;
-	width: 113px;
-	height: 80px;
+	left: 45px;
+	width: 102px;
+	height: 72px;
 }
 text{
     width: 100%;
